@@ -13,6 +13,7 @@
 #include "projections/ProjectionSurface.h"
 #include "renderers/BillboardRenderer.h"
 #include "renderers/LineRenderer.h"
+#include "renderers/CustomLineRenderer.h"
 #include "renderers/MapRenderer.h"
 #include "renderers/NMLModelRenderer.h"
 #include "renderers/PointRenderer.h"

@@ -24,6 +24,7 @@ namespace carto {
     class GeometryCollection;
     class Label;
     class Line;
+    class CustomLine;
     class LineStyle;
     class Marker;
     class NMLModel;
@@ -37,6 +38,7 @@ namespace carto {
     class BillboardSorter;
     class GeometryCollectionRenderer;
     class LineRenderer;
+    class CustomLineRenderer;
     class NMLModelRenderer;
     class PointRenderer;
     class Polygon3DRenderer;
@@ -153,6 +155,7 @@ namespace carto {
         std::shared_ptr<BillboardRenderer> _billboardRenderer;
         std::shared_ptr<GeometryCollectionRenderer> _geometryCollectionRenderer;
         std::shared_ptr<LineRenderer> _lineRenderer;
+        std::shared_ptr<CustomLineRenderer> _customLineRenderer;
         std::shared_ptr<PointRenderer> _pointRenderer;
         std::shared_ptr<PolygonRenderer> _polygonRenderer;
         std::shared_ptr<Polygon3DRenderer> _polygon3DRenderer;

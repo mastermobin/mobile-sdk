@@ -9,6 +9,7 @@
 #include "renderers/BillboardRenderer.h"
 #include "renderers/GeometryCollectionRenderer.h"
 #include "renderers/LineRenderer.h"
+#include "renderers/CustomLineRenderer.h"
 #include "renderers/MapRenderer.h"
 #include "renderers/NMLModelRenderer.h"
 #include "renderers/PointRenderer.h"
@@ -19,6 +20,7 @@
 #include "renderers/drawdatas/GeometryCollectionDrawData.h"
 #include "renderers/drawdatas/LabelDrawData.h"
 #include "renderers/drawdatas/LineDrawData.h"
+#include "renderers/drawdatas/CustomLineDrawData.h"
 #include "renderers/drawdatas/MarkerDrawData.h"
 #include "renderers/drawdatas/NMLModelDrawData.h"
 #include "renderers/drawdatas/PointDrawData.h"
@@ -28,6 +30,7 @@
 #include "vectorelements/GeometryCollection.h"
 #include "vectorelements/Label.h"
 #include "vectorelements/Line.h"
+#include "vectorelements/CustomLine.h"
 #include "vectorelements/Marker.h"
 #include "vectorelements/NMLModel.h"
 #include "vectorelements/Point.h"
@@ -50,6 +53,7 @@ namespace carto {
         _billboardRenderer(std::make_shared<BillboardRenderer>()),
         _geometryCollectionRenderer(std::make_shared<GeometryCollectionRenderer>()),
         _lineRenderer(std::make_shared<LineRenderer>()),
+        _customLineRenderer(std::make_shared<CustomLineRenderer>()),
         _pointRenderer(std::make_shared<PointRenderer>()),
         _polygonRenderer(std::make_shared<PolygonRenderer>()),
         _polygon3DRenderer(std::make_shared<Polygon3DRenderer>()),
@@ -154,6 +158,7 @@ namespace carto {
         _billboardRenderer->offsetLayerHorizontally(offset);
         _geometryCollectionRenderer->offsetLayerHorizontally(offset);
         _lineRenderer->offsetLayerHorizontally(offset);
+        _customLineRenderer->offsetLayerHorizontally(offset);
         _pointRenderer->offsetLayerHorizontally(offset);
         _polygonRenderer->offsetLayerHorizontally(offset);
         _polygon3DRenderer->offsetLayerHorizontally(offset);
@@ -165,6 +170,7 @@ namespace carto {
         _billboardRenderer->onSurfaceCreated(shaderManager, textureManager);
         _geometryCollectionRenderer->onSurfaceCreated(shaderManager, textureManager);
         _lineRenderer->onSurfaceCreated(shaderManager, textureManager);
+        _customLineRenderer->onSurfaceCreated(shaderManager, textureManager);
         _pointRenderer->onSurfaceCreated(shaderManager, textureManager);
         _polygonRenderer->onSurfaceCreated(shaderManager, textureManager);
         _polygon3DRenderer->onSurfaceCreated(shaderManager, textureManager);
@@ -186,6 +192,7 @@ namespace carto {
             bool refresh = _billboardRenderer->onDrawFrame(deltaSeconds, billboardSorter, styleCache, viewState);
             _geometryCollectionRenderer->onDrawFrame(deltaSeconds, styleCache, viewState);
             _lineRenderer->onDrawFrame(deltaSeconds, styleCache, viewState);
+            _customLineRenderer->onDrawFrame(deltaSeconds, styleCache, viewState);
             _pointRenderer->onDrawFrame(deltaSeconds, styleCache, viewState);
             _polygonRenderer->onDrawFrame(deltaSeconds, styleCache, viewState);
             _polygon3DRenderer->onDrawFrame(deltaSeconds, viewState);
@@ -207,6 +214,7 @@ namespace carto {
         _billboardRenderer->onSurfaceDestroyed();
         _geometryCollectionRenderer->onSurfaceDestroyed();
         _lineRenderer->onSurfaceDestroyed();
+        _customLineRenderer->onSurfaceDestroyed();
         _pointRenderer->onSurfaceDestroyed();
         _polygonRenderer->onSurfaceDestroyed();
         _polygon3DRenderer->onSurfaceDestroyed();
@@ -219,6 +227,7 @@ namespace carto {
         _billboardRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
         _geometryCollectionRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
         _lineRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
+        _customLineRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
         _pointRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
         _polygonRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
         _polygon3DRenderer->calculateRayIntersectedElements(thisLayer, ray, viewState, results);
@@ -318,6 +327,11 @@ namespace carto {
                 line->setDrawData(std::make_shared<LineDrawData>(*line->getGeometry(), *line->getStyle(), *_dataSource->getProjection(), *projectionSurface));
             }
             _lineRenderer->addElement(line);
+        } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
+            if (!customLine->getDrawData() || customLine->getDrawData()->isOffset()) {
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), *projectionSurface));
+            }
+            _customLineRenderer->addElement(customLine);
         } else if (const std::shared_ptr<Marker>& marker = std::dynamic_pointer_cast<Marker>(element)) {
             if (!marker->getDrawData() || marker->getDrawData()->isOffset()) {
                 marker->setDrawData(std::make_shared<MarkerDrawData>(*marker, *marker->getStyle(), *_dataSource->getProjection(), *projectionSurface));
@@ -365,6 +379,7 @@ namespace carto {
         _billboardRenderer->refreshElements();
         _geometryCollectionRenderer->refreshElements();
         _lineRenderer->refreshElements();
+        _customLineRenderer->refreshElements();
         _pointRenderer->refreshElements();
         _polygonRenderer->refreshElements();
         _polygon3DRenderer->refreshElements();
@@ -405,6 +420,13 @@ namespace carto {
                 _lineRenderer->updateElement(line);
             } else {
                 _lineRenderer->removeElement(line);
+            }
+        } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
+            if (visible && !remove) {
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), *projectionSurface));
+                _customLineRenderer->updateElement(customLine);
+            } else {
+                _customLineRenderer->removeElement(customLine);
             }
         } else if (const std::shared_ptr<Marker>& marker = std::dynamic_pointer_cast<Marker>(element)) {
             if (visible && !remove) {
