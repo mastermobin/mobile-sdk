@@ -44,6 +44,7 @@ namespace carto {
         _u_tex_before(0),
         _u_tex_after(0),
         _u_progress(0),
+        _u_gradientPercent(0),
         _u_beforeColor(0),
         _u_afterColor(0),
         _progress(-1),
@@ -82,6 +83,7 @@ namespace carto {
         _u_tex_before = _shader->getUniformLoc("u_tex_before");
         _u_tex_after = _shader->getUniformLoc("u_tex_after");
         _u_progress = _shader->getUniformLoc("u_progress");
+        _u_gradientPercent = _shader->getUniformLoc("u_gradientPercent");
         _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
         _u_afterColor = _shader->getUniformLoc("u_afterColor");
 
@@ -394,6 +396,7 @@ namespace carto {
         glUniform1f(_u_dpToPX, viewState.getDPToPX());
         glUniform1f(_u_unitToDP, viewState.getUnitToDPCoef());
         glUniform1f(_u_progress, 0.0f);
+        glUniform1f(_u_gradientPercent, 0.0f);
         // Matrix
         const cglib::mat4x4<float>& mvpMat = viewState.getRTEModelviewProjectionMat();
         glUniformMatrix4fv(_u_mvpMat, 1, GL_FALSE, mvpMat.data());
@@ -423,6 +426,7 @@ namespace carto {
         glUniform4f(_u_beforeColor, beforeColor.getR() / 255.0f, beforeColor.getG() / 255.0f, beforeColor.getB() / 255.0f, beforeColor.getA()/ 255.0f);
         const Color& afterColor = customLine->getStyle()->getAfterColor();
         glUniform4f(_u_afterColor, afterColor.getR() / 255.0f, afterColor.getG() / 255.0f, afterColor.getB() / 255.0f, afterColor.getA()/ 255.0f);
+        glUniform1f(_u_gradientPercent, customLine->getDrawData()->getGradientPercent());
     }
     
     void CustomLineRenderer::drawBatch(StyleTextureCache& styleCache, const ViewState& viewState) {
@@ -495,6 +499,7 @@ namespace carto {
         #version 100
         precision mediump float;
         uniform float u_progress;
+        uniform float u_gradientPercent;
         uniform sampler2D u_tex_before;
         uniform sampler2D u_tex_after;
         uniform vec4 u_beforeColor;
@@ -513,9 +518,13 @@ namespace carto {
         #endif
         void main() {
             lowp float a = clamp(v_width - abs(v_dist), 0.0, 1.0);
-            if(v_progress < u_progress){
+            if(v_progress <= u_progress - u_gradientPercent) {
                 gl_FragColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
-            }else{
+            } else if(v_progress <= u_progress) {
+                float dist = u_progress - v_progress;
+                float coef = dist / u_gradientPercent;
+                gl_FragColor = (texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a * coef) + (texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a * (1.0 - coef));
+            } else {
                 gl_FragColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
             }
         }

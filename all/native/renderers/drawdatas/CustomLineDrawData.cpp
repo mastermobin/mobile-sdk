@@ -22,7 +22,8 @@ namespace carto {
         _afterBitmap(style.getAfterBitmap()),
         _normalScale(style.getWidth() / 2),
         _clickScale(style.getClickWidth() == -1 ? std::max(1.0f, 1 + (IDEAL_CLICK_WIDTH - style.getWidth()) * CLICK_WIDTH_COEF / style.getWidth()) : style.getClickWidth()),
-        _currentProgress(style.getCurrentProgress()),
+        _gradientPercent(0),
+        _gradientWidth(style.getGradientWidth()),
         _poses(),
         _coords(),
         _normals(),
@@ -39,7 +40,8 @@ namespace carto {
         _afterBitmap(style.getAfterBitmap()),
         _normalScale(style.getWidth() / 2),
         _clickScale(std::max(1.0f, 1 + (IDEAL_CLICK_WIDTH - style.getWidth()) * CLICK_WIDTH_COEF / style.getWidth())),
-        _currentProgress(style.getCurrentProgress()),
+        _gradientPercent(0),
+        _gradientWidth(style.getGradientWidth()),
         _poses(),
         _coords(),
         _normals(),
@@ -71,6 +73,10 @@ namespace carto {
     
     float CustomLineDrawData::getCurrentProgress() const {
         return _currentProgress;
+    }
+    
+    float CustomLineDrawData::getGradientPercent() const {
+        return _gradientPercent;
     }
     
     const std::vector<std::vector<cglib::vec3<double>*> >& CustomLineDrawData::getCoords() const {
@@ -207,6 +213,8 @@ namespace carto {
             long double lineLength = cglib::length(_poses[i] - _poses[i - 1]);
             totalLineLength += lineLength;
         }
+        _gradientPercent = 0.5f / totalLineLength;
+        Log::Errorf("Total: %f, Percent: %f", totalLineLength, _gradientPercent);
         long double addLineLength = 0;
         long double prevAddLineLength = 0;
 

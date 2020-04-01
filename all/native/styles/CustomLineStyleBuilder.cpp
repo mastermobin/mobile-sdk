@@ -16,7 +16,7 @@ namespace carto {
         _lineJoinType(CustomLineJoinType::LINE_JOIN_TYPE_MITER),
         _stretchFactor(1),
         _width(12),
-        _currentProgress(0)
+        _gradientWidth(0)
     {
     }
     
@@ -121,20 +121,20 @@ namespace carto {
         _width = width;
     }  
 
-    float CustomLineStyleBuilder::getCurrentProgress() {
+    float CustomLineStyleBuilder::getGradientWidth() {
         std::lock_guard<std::mutex> lock(_mutex);
-        return _currentProgress;
+        return _gradientWidth;
     }
     
-    void CustomLineStyleBuilder::setCurrentProgress(float progress) {
+    void CustomLineStyleBuilder::setGradientWidth(float gradientWidth) {
         std::lock_guard<std::mutex> lock(_mutex);
-        _currentProgress = progress;
+        _gradientWidth = gradientWidth;
     }
     
     std::shared_ptr<CustomLineStyle> CustomLineStyleBuilder::buildStyle() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return std::make_shared<CustomLineStyle>(_color, _beforeBitmap, _afterBitmap, _beforeColor, _afterColor, _clickWidth, _lineEndType, _lineJoinType,
-                _stretchFactor, _width, _currentProgress);
+                _stretchFactor, _width, _gradientWidth);
     }
     
     std::shared_ptr<Bitmap> CustomLineStyleBuilder::GetDefaultBitmap() {

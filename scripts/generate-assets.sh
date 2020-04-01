@@ -2,7 +2,7 @@
 
 cd ../assets
 xxd -i default-background.png > ../all/native/assets/DefaultBackgroundPNG.h
-xxd -i default-line.png > ../all/native/assets/DefaultLinePNG.h
+# xxd -i default-line.png > ../all/native/assets/DefaultLinePNG.h
 xxd -i default-marker.png > ../all/native/assets/DefaultMarkerPNG.h
 xxd -i default-point.png > ../all/native/assets/DefaultPointPNG.h
 xxd -i default-polygon.png > ../all/native/assets/DefaultPolygonPNG.h

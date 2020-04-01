@@ -5,7 +5,7 @@ namespace carto {
     CustomLineStyle::CustomLineStyle(const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
             const Color& beforeColor, const Color& afterColor, float clickWidth,
             CustomLineEndType::CustomLineEndType lineEndType, CustomLineJoinType::CustomLineJoinType lineJoinType,
-            float stretchFactor, float width, float progress) :
+            float stretchFactor, float width, float gradientWidth) :
         Style(color),
         _beforeBitmap(beforeBitmap),
         _afterBitmap(afterBitmap),
@@ -16,7 +16,7 @@ namespace carto {
         _lineJoinType(lineJoinType),
         _stretchFactor(stretchFactor),
         _width(width),
-        _currentProgress(progress)
+        _gradientWidth(gradientWidth)
     {
     }
     
@@ -59,8 +59,8 @@ namespace carto {
         return _width;
     }
 
-    float CustomLineStyle::getCurrentProgress() const {
-        return _currentProgress;
+    float CustomLineStyle::getGradientWidth() const {
+        return _gradientWidth;
     }
     
 }

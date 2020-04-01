@@ -140,9 +140,9 @@ namespace carto {
          */
         void setWidth(float width);
 
-        float getCurrentProgress();
+        float getGradientWidth();
 
-        void setCurrentProgress(float progress);
+        void setGradientWidth(float gradientWidth);
     
         /**
          * Builds a new instance of the LineStyle object using previously set parameters.
@@ -172,7 +172,7 @@ namespace carto {
     
         float _width;
 
-        float _currentProgress;
+        float _gradientWidth;
     };
     
 }
