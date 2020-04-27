@@ -9,6 +9,7 @@
 #include "vectorelements/CustomLine.h"
 #include "vectorelements/Polygon.h"
 #include "utils/Const.h"
+#include "projections/EPSG3857.h"
 #include "utils/Log.h"
 
 #include <cmath>
@@ -98,6 +99,30 @@ namespace carto {
     const std::vector<std::vector<unsigned int> >& CustomLineDrawData::getIndices() const {
         return _indices;
     }
+
+    double CustomLineDrawData::calculateDistance(const cglib::vec3<double> a, const cglib::vec3<double> b, const Projection& projection) const{
+        MapPos am(a[0], a[1]), bm(b[0], b[1]);
+        MapPos awgs = projection.toWgs84(projection.fromInternal(am));
+        MapPos bwgs = projection.toWgs84(projection.fromInternal(bm));
+
+        double lat1 = awgs.getY(), lat2 = bwgs.getY(), lon1 = awgs.getX(), lon2 = bwgs.getX();
+        int R = 6371 * 1000; // Radius of the Earth
+
+        double latDistance = Const::DEG_TO_RAD * (lat2 - lat1);
+        double lonDistance = Const::DEG_TO_RAD * (lon2 - lon1);
+        double af = sin(latDistance / 2) * sin(latDistance / 2)
+            + cos(Const::DEG_TO_RAD * lat1) * cos(Const::DEG_TO_RAD * lat2)
+            * sin(lonDistance / 2) * sin(lonDistance / 2);
+        double c = 2 * atan2(sqrt(af), sqrt(1 - af));
+        double distance = R * c;
+
+        double height = 0;
+
+        distance = pow(distance, 2) + pow(height, 2);
+
+        return sqrt(distance);
+    }
+
     
     void CustomLineDrawData::offsetHorizontally(double offset) {
         for (cglib::vec3<double>& pos : _poses) {
@@ -210,10 +235,10 @@ namespace carto {
         // Caculate line length
         long double totalLineLength = 0;
         for(std::size_t i = 1; i < _poses.size(); i++){
-            long double lineLength = cglib::length(_poses[i] - _poses[i - 1]);
+            long double lineLength = calculateDistance(_poses[i - 1], _poses[i], projection);
             totalLineLength += lineLength;
         }
-        _gradientPercent = 0.5f / totalLineLength;
+        _gradientPercent = _gradientWidth * 10000 / totalLineLength;
         Log::Errorf("Total: %f, Percent: %f", totalLineLength, _gradientPercent);
         long double addLineLength = 0;
         long double prevAddLineLength = 0;
@@ -253,7 +278,7 @@ namespace carto {
             cglib::vec3<float> prevPerpVec = cglib::unit(cglib::vector_product(posNormals[i], prevLine));
 
             prevAddLineLength = addLineLength;
-            long double lineLength = cglib::length(prevLine);
+            long double lineLength = calculateDistance(prevPos, pos, projection);
             addLineLength += lineLength;
 
             // Trick to reuse already generated vertex data (only for mitered lines)
@@ -300,10 +325,10 @@ namespace carto {
             coords.push_back(&pos);
 
             // Add line progresses
-            progresses.push_back(prevAddLineLength / totalLineLength);
-            progresses.push_back(prevAddLineLength / totalLineLength);
-            progresses.push_back(addLineLength / totalLineLength);
-            progresses.push_back(addLineLength / totalLineLength);
+            progresses.push_back(prevAddLineLength * 10000 / totalLineLength);
+            progresses.push_back(prevAddLineLength * 10000 / totalLineLength);
+            progresses.push_back(addLineLength * 10000 / totalLineLength);
+            progresses.push_back(addLineLength * 10000 / totalLineLength);
             
             if (useTexCoordY) {
                 float texCoordYOffset = cglib::length(prevLine) * texCoordYScale;
@@ -352,7 +377,7 @@ namespace carto {
                     
                     // Add the t vertex
                     coords.push_back(&pos);
-                    progresses.push_back(addLineLength / totalLineLength);
+                    progresses.push_back(addLineLength * 10000 / totalLineLength);
                     normals.push_back(cglib::expand(rotVec, 0.0f));
                     texCoords.push_back(cglib::vec2<float>(0.5f, texCoordY));
                     
@@ -360,7 +385,7 @@ namespace carto {
                     for (int j = 0; j < segments - 1; j++) {
                         rotVec = cglib::transform(rotVec, rot3DMat);
                         coords.push_back(&pos);
-                        progresses.push_back(addLineLength / totalLineLength);
+                        progresses.push_back(addLineLength * 10000 / totalLineLength);
                         normals.push_back(cglib::expand(rotVec, leftTurn ? 1.0f : -1.0f));
                         texCoords.push_back(cglib::vec2<float>(leftTurn ? 0.0f : 1.0f, texCoordY));
                     }
@@ -409,7 +434,7 @@ namespace carto {
                 
                 // Add the t vertex
                 coords.push_back(&_poses[_poses.size() - 1]);
-                progresses.push_back(addLineLength / totalLineLength);
+                progresses.push_back(addLineLength * 10000 / totalLineLength);
                 normals.push_back(cglib::expand(lastPerpVec, 0.0f));
                 texCoords.push_back(cglib::vec2<float>(0.5f, texCoordY));
                 
@@ -424,7 +449,7 @@ namespace carto {
                         rotVec = cglib::transform(rotVec, rot3DMat);
                         uvRotVec = cglib::transform(uvRotVec, rot2DMat);
                         coords.push_back(&_poses[_poses.size() - 1]);
-                        progresses.push_back(addLineLength / totalLineLength);
+                        progresses.push_back(addLineLength * 10000 / totalLineLength);
                         normals.push_back(cglib::expand(rotVec, -1.0f));
                         texCoords.push_back(cglib::vec2<float>(uvRotVec(0) * 0.5f + 0.5f, texCoordY));
                     }
@@ -434,7 +459,7 @@ namespace carto {
                         cglib::mat3x3<float> rot3DMat = cglib::rotate3_matrix(posNormals[_poses.size() - 1], static_cast<float>(-s * segmentDeltaAngle * Const::DEG_TO_RAD));
                         cglib::vec3<float> normalVec = cglib::transform(lastPerpVec, rot3DMat) * std::sqrt(2.0f);
                         coords.push_back(&_poses[_poses.size() - 1]);
-                        progresses.push_back(addLineLength / totalLineLength);
+                        progresses.push_back(addLineLength * 10000 / totalLineLength);
                         normals.push_back(cglib::expand(normalVec, static_cast<float>(s)));
                         texCoords.push_back(cglib::vec2<float>(s * 0.5f + 0.5f, texCoordY));
                     }

@@ -520,10 +520,10 @@ namespace carto {
             lowp float a = clamp(v_width - abs(v_dist), 0.0, 1.0);
             if(v_progress <= u_progress - u_gradientPercent) {
                 gl_FragColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
-            } else if(v_progress <= u_progress) {
-                float dist = u_progress - v_progress;
-                float coef = dist / u_gradientPercent;
-                gl_FragColor = (texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a * coef) + (texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a * (1.0 - coef));
+            } else if(v_progress <= u_progress + u_gradientPercent) {
+                float dist = v_progress - u_progress + u_gradientPercent;
+                float coef = dist / float(2.0 * u_gradientPercent);
+                gl_FragColor = (texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a * (1.0 - coef)) + (texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a * coef);
             } else {
                 gl_FragColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
             }

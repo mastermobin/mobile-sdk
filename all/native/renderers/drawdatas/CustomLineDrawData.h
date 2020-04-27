@@ -50,6 +50,8 @@ namespace carto {
         const std::vector<std::vector<float> >& getProgresses() const;
     
         const std::vector<std::vector<unsigned int> >& getIndices() const;
+
+        double calculateDistance(const cglib::vec3<double> a, const cglib::vec3<double> b, const Projection& projection) const;
     
         virtual void offsetHorizontally(double offset);
     

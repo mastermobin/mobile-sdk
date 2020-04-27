@@ -74,6 +74,7 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "linestyle.h": "c"
+        "linestyle.h": "c",
+        "variant": "cpp"
     }
 }
