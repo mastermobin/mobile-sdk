@@ -151,6 +151,7 @@ namespace carto {
         float _rotation;
         
         bool _scaleWithDPI;
+        float _gradientPercent;
         
         BillboardScaling::BillboardScaling _scalingMode;
     
