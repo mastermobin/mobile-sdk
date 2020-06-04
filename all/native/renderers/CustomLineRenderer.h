@@ -7,7 +7,8 @@
 #ifndef _CARTO_CUSTOMLINERENDERER_H_
 #define _CARTO_CUSTOMLINERENDERER_H_
 
-#include "graphics/utils/GLContext.h"
+#include "renderers/utils/GLContext.h"
+#include "renderers/utils/BitmapTextureCache.h"
 
 #include <deque>
 #include <memory>
@@ -20,34 +21,32 @@ namespace carto {
     class Bitmap;
     class CustomLine;
     class CustomLineDrawData;
-    class CustomLineStyle;
+    class Options;
+    class MapRenderer;
     class Shader;
-    class ShaderManager;
-    class TextureManager;
-    class VectorElement;
     class RayIntersectedElement;
     class VectorLayer;
+    class VectorElement;
     class ViewState;
-    class StyleTextureCache;
-    
+
     class CustomLineRenderer {
     public:
         CustomLineRenderer();
         virtual ~CustomLineRenderer();
-    
+
+        void setComponents(const std::weak_ptr<Options>& options, const std::weak_ptr<MapRenderer>& mapRenderer);
+
         void offsetLayerHorizontally(double offset);
-    
-        void onSurfaceCreated(const std::shared_ptr<ShaderManager>& shaderManager, const std::shared_ptr<TextureManager>& textureManager);
-        void onDrawFrame(float deltaSeconds, StyleTextureCache& styleCache, const ViewState& viewState);
-        void onSurfaceDestroyed();
-    
+
+        void onDrawFrame(float deltaSeconds, const ViewState& viewState);
+
         void addElement(const std::shared_ptr<CustomLine>& element);
         void refreshElements();
         void updateElement(const std::shared_ptr<CustomLine>& element);
         void removeElement(const std::shared_ptr<CustomLine>& element);
-    
+
         void calculateRayIntersectedElements(const std::shared_ptr<VectorLayer>& layer, const cglib::ray3<double>& ray, const ViewState& viewState, std::vector<RayIntersectedElement>& results) const;
-    
+
     protected:
         friend class PolygonRenderer;
         friend class GeometryCollectionRenderer;
@@ -65,7 +64,6 @@ namespace carto {
                                         std::vector<unsigned short>& indexBuf,
                                         std::vector<float>& progressBuf,
                                         std::vector<const CustomLineDrawData*>& drawDataBuffer,
-                                        StyleTextureCache& styleCache,
                                         const ViewState& viewState);
 
         static bool FindElementRayIntersection(const std::shared_ptr<VectorElement>& element,
@@ -75,30 +73,36 @@ namespace carto {
                                                const ViewState& viewState,
                                                std::vector<RayIntersectedElement>& results);
 
+        bool initializeRenderer();
         void bind(const ViewState& viewState);
         void unbind();
-        
+
         bool isEmptyBatch() const;
-        void addToBatch(const std::shared_ptr<CustomLine>& customLine, StyleTextureCache& styleCache, const ViewState& viewState);
-        void drawBatch(StyleTextureCache& styleCache, const ViewState& viewState);
-    
+        void addToBatch(const std::shared_ptr<CustomLine>& customLine, const ViewState& viewState);
+        void drawBatch(const ViewState& viewState);
+
         static const std::string LINE_VERTEX_SHADER;
         static const std::string LINE_FRAGMENT_SHADER;
 
+        static const unsigned int TEXTURE_CACHE_SIZE;
+
+        std::weak_ptr<MapRenderer> _mapRenderer;
+
         std::vector<std::shared_ptr<CustomLine> > _elements;
         std::vector<std::shared_ptr<CustomLine> > _tempElements;
-        
+
         std::vector<std::shared_ptr<CustomLineDrawData> > _drawDataBuffer; // this buffer is used to keep objects alive
         std::vector<const CustomLineDrawData*> _lineDrawDataBuffer;
         float _progress;
-    
+
         std::vector<unsigned char> _colorBuf;
         std::vector<float> _coordBuf;
         std::vector<float> _normalBuf;
         std::vector<float> _texCoordBuf;
         std::vector<unsigned short> _indexBuf;
         std::vector<float> _progressBuf;
-    
+
+        std::shared_ptr<BitmapTextureCache> _textureCache;
         std::shared_ptr<Shader> _shader;
         GLuint _a_color;
         GLuint _a_coord;
@@ -115,10 +119,10 @@ namespace carto {
         GLuint _u_gradientPercent;
         GLuint _u_beforeColor;
         GLuint _u_afterColor;
-    
+
         mutable std::mutex _mutex;
     };
-    
+
 }
 
 #endif

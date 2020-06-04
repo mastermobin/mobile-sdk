@@ -25,8 +25,8 @@ namespace carto {
     
     class CustomLineDrawData : public VectorElementDrawData {
     public:
-        CustomLineDrawData(const LineGeometry& geometry, const CustomLineStyle& style, const Projection& projection, const ProjectionSurface& projectionSurface);
-        CustomLineDrawData(const std::vector<MapPos>& poses, const CustomLineStyle& style, const Projection& projection, const ProjectionSurface& projectionSurface);
+        CustomLineDrawData(const LineGeometry& geometry, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
+        CustomLineDrawData(const std::vector<MapPos>& poses, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
         virtual ~CustomLineDrawData();
     
         const std::shared_ptr<Bitmap> getBeforeBitmap() const;
@@ -51,7 +51,7 @@ namespace carto {
     
         const std::vector<std::vector<unsigned int> >& getIndices() const;
 
-        double calculateDistance(const cglib::vec3<double> a, const cglib::vec3<double> b, const Projection& projection) const;
+        double calculateDistance(cglib::vec3<double> a, cglib::vec3<double> b, const Projection& projection) const;
     
         virtual void offsetHorizontally(double offset);
     
@@ -64,7 +64,7 @@ namespace carto {
     
         static const float CLICK_WIDTH_COEF;
         
-        void init(const std::vector<MapPos>& poses, const Projection& projection, const ProjectionSurface& projectionSurface, const CustomLineStyle& style);
+        void init(const std::vector<MapPos>& poses, const Projection& projection, const CustomLineStyle& style);
     
         std::shared_ptr<Bitmap> _beforeBitmap;
 

@@ -2,9 +2,9 @@
 #include "core/MapPos.h"
 #include "geometry/LineGeometry.h"
 #include "graphics/Bitmap.h"
-#include "graphics/utils/GLContext.h"
 #include "projections/Projection.h"
 #include "projections/ProjectionSurface.h"
+#include "renderers/utils/GLContext.h"
 #include "styles/CustomLineStyle.h"
 #include "vectorelements/CustomLine.h"
 #include "vectorelements/Polygon.h"
@@ -17,8 +17,8 @@
 
 namespace carto {
 
-    CustomLineDrawData::CustomLineDrawData(const LineGeometry& geometry, const CustomLineStyle& style, const Projection& projection, const ProjectionSurface& projectionSurface) :
-        VectorElementDrawData(style.getColor()),
+    CustomLineDrawData::CustomLineDrawData(const LineGeometry& geometry, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface) :
+        VectorElementDrawData(style.getColor(), projectionSurface),
         _beforeBitmap(style.getBeforeBitmap()),
         _afterBitmap(style.getAfterBitmap()),
         _normalScale(style.getWidth() / 2),
@@ -32,11 +32,11 @@ namespace carto {
         _progresses(),
         _indices()
     {
-        init(geometry.getPoses(), projection, projectionSurface, style);
+        init(geometry.getPoses(), projection, style);
     }
     
-    CustomLineDrawData::CustomLineDrawData(const std::vector<MapPos>& poses, const CustomLineStyle& style, const Projection& projection, const ProjectionSurface& projectionSurface) :
-        VectorElementDrawData(style.getColor()),
+    CustomLineDrawData::CustomLineDrawData(const std::vector<MapPos>& poses, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface) :
+        VectorElementDrawData(style.getColor(), projectionSurface),
         _beforeBitmap(style.getBeforeBitmap()),
         _afterBitmap(style.getAfterBitmap()),
         _normalScale(style.getWidth() / 2),
@@ -50,7 +50,7 @@ namespace carto {
         _progresses(),
         _indices()
     {
-        init(poses, projection, projectionSurface, style);
+        init(poses, projection, style);
     }
         
     CustomLineDrawData::~CustomLineDrawData() {
@@ -131,7 +131,7 @@ namespace carto {
         setIsOffset(true);
     }
     
-    void CustomLineDrawData::init(const std::vector<MapPos>& poses, const Projection& projection, const ProjectionSurface& projectionSurface, const CustomLineStyle& style) {
+    void CustomLineDrawData::init(const std::vector<MapPos>& poses, const Projection& projection, const CustomLineStyle& style) {
         // Calculate real coordinates and tesselate the line
         std::vector<cglib::vec3<float> > posNormals;
         _poses.reserve(poses.size());
@@ -139,12 +139,12 @@ namespace carto {
         std::vector<MapPos> internalPoses;
         for (std::size_t i = 1; i < poses.size(); i++) {
             internalPoses.clear();
-            projectionSurface.tesselateSegment(projection.toInternal(poses[i - 1]), projection.toInternal(poses[i]), internalPoses);
+            _projectionSurface->tesselateSegment(projection.toInternal(poses[i - 1]), projection.toInternal(poses[i]), internalPoses);
             for (const MapPos& internalPos : internalPoses) {
-                cglib::vec3<double> pos = projectionSurface.calculatePosition(internalPos);
+                cglib::vec3<double> pos = _projectionSurface->calculatePosition(internalPos);
                 if (_poses.empty() || pos != _poses.back()) {
                     _poses.push_back(pos);
-                    posNormals.push_back(cglib::vec3<float>::convert(projectionSurface.calculateNormal(internalPos)));
+                    posNormals.push_back(cglib::vec3<float>::convert(_projectionSurface->calculateNormal(internalPos)));
                 }
             }
         }
@@ -231,15 +231,8 @@ namespace carto {
         texCoords.reserve(coordCount);
         progresses.reserve(coordCount);
         indices.reserve(indexCount);
-
-        // Caculate line length
-        long double totalLineLength = 0;
-        for(std::size_t i = 1; i < _poses.size(); i++){
-            long double lineLength = calculateDistance(_poses[i - 1], _poses[i], projection);
-            totalLineLength += lineLength;
-        }
-        _gradientPercent = _gradientWidth * 10000 / totalLineLength;
-        Log::Errorf("Total: %f, Percent: %f", totalLineLength, _gradientPercent);
+        
+        _gradientPercent = _gradientWidth;
         long double addLineLength = 0;
         long double prevAddLineLength = 0;
 
@@ -325,10 +318,10 @@ namespace carto {
             coords.push_back(&pos);
 
             // Add line progresses
-            progresses.push_back(prevAddLineLength * 10000 / totalLineLength);
-            progresses.push_back(prevAddLineLength * 10000 / totalLineLength);
-            progresses.push_back(addLineLength * 10000 / totalLineLength);
-            progresses.push_back(addLineLength * 10000 / totalLineLength);
+            progresses.push_back(prevAddLineLength);
+            progresses.push_back(prevAddLineLength);
+            progresses.push_back(addLineLength);
+            progresses.push_back(addLineLength);
             
             if (useTexCoordY) {
                 float texCoordYOffset = cglib::length(prevLine) * texCoordYScale;
@@ -377,7 +370,7 @@ namespace carto {
                     
                     // Add the t vertex
                     coords.push_back(&pos);
-                    progresses.push_back(addLineLength * 10000 / totalLineLength);
+                    progresses.push_back(addLineLength);
                     normals.push_back(cglib::expand(rotVec, 0.0f));
                     texCoords.push_back(cglib::vec2<float>(0.5f, texCoordY));
                     
@@ -385,7 +378,7 @@ namespace carto {
                     for (int j = 0; j < segments - 1; j++) {
                         rotVec = cglib::transform(rotVec, rot3DMat);
                         coords.push_back(&pos);
-                        progresses.push_back(addLineLength * 10000 / totalLineLength);
+                        progresses.push_back(addLineLength);
                         normals.push_back(cglib::expand(rotVec, leftTurn ? 1.0f : -1.0f));
                         texCoords.push_back(cglib::vec2<float>(leftTurn ? 0.0f : 1.0f, texCoordY));
                     }
@@ -434,7 +427,7 @@ namespace carto {
                 
                 // Add the t vertex
                 coords.push_back(&_poses[_poses.size() - 1]);
-                progresses.push_back(addLineLength * 10000 / totalLineLength);
+                progresses.push_back(addLineLength);
                 normals.push_back(cglib::expand(lastPerpVec, 0.0f));
                 texCoords.push_back(cglib::vec2<float>(0.5f, texCoordY));
                 
@@ -449,7 +442,7 @@ namespace carto {
                         rotVec = cglib::transform(rotVec, rot3DMat);
                         uvRotVec = cglib::transform(uvRotVec, rot2DMat);
                         coords.push_back(&_poses[_poses.size() - 1]);
-                        progresses.push_back(addLineLength * 10000 / totalLineLength);
+                        progresses.push_back(addLineLength);
                         normals.push_back(cglib::expand(rotVec, -1.0f));
                         texCoords.push_back(cglib::vec2<float>(uvRotVec(0) * 0.5f + 0.5f, texCoordY));
                     }
@@ -459,7 +452,7 @@ namespace carto {
                         cglib::mat3x3<float> rot3DMat = cglib::rotate3_matrix(posNormals[_poses.size() - 1], static_cast<float>(-s * segmentDeltaAngle * Const::DEG_TO_RAD));
                         cglib::vec3<float> normalVec = cglib::transform(lastPerpVec, rot3DMat) * std::sqrt(2.0f);
                         coords.push_back(&_poses[_poses.size() - 1]);
-                        progresses.push_back(addLineLength * 10000 / totalLineLength);
+                        progresses.push_back(addLineLength);
                         normals.push_back(cglib::expand(normalVec, static_cast<float>(s)));
                         texCoords.push_back(cglib::vec2<float>(s * 0.5f + 0.5f, texCoordY));
                     }

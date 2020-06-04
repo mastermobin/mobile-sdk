@@ -1,146 +1,119 @@
 #include "CustomLineRenderer.h"
 #include "graphics/Bitmap.h"
-#include "graphics/Shader.h"
-#include "graphics/ShaderManager.h"
-#include "graphics/Texture.h"
-#include "graphics/TextureManager.h"
 #include "graphics/ViewState.h"
-#include "graphics/utils/GLContext.h"
 #include "layers/VectorLayer.h"
+#include "renderers/MapRenderer.h"
+#include "renderers/utils/GLResourceManager.h"
+#include "renderers/utils/Shader.h"
+#include "renderers/utils/Texture.h"
 #include "renderers/drawdatas/CustomLineDrawData.h"
-#include "renderers/components/RayIntersectedElement.h"
-#include "renderers/components/StyleTextureCache.h"
 #include "styles/CustomLineStyle.h"
+#include "renderers/components/RayIntersectedElement.h"
 #include "utils/Const.h"
 #include "utils/Log.h"
 #include "vectorelements/CustomLine.h"
+
 
 #include <cglib/mat.h>
 #include <cglib/vec.h>
 
 namespace carto {
-    
+
     CustomLineRenderer::CustomLineRenderer() :
-        _elements(),
-        _tempElements(),
-        _drawDataBuffer(),
-        _lineDrawDataBuffer(),
-        _colorBuf(),
-        _coordBuf(),
-        _normalBuf(),
-        _texCoordBuf(),
-        _indexBuf(),
-        _progressBuf(),
-        _shader(),
-        _a_color(0),
-        _a_coord(0),
-        _a_normal(0),
-        _a_texCoord(0),
-        _a_progress(0),
-        _u_gamma(0),
-        _u_dpToPX(0),
-        _u_unitToDP(0),
-        _u_mvpMat(0),
-        _u_tex_before(0),
-        _u_tex_after(0),
-        _u_progress(0),
-        _u_gradientPercent(0),
-        _u_beforeColor(0),
-        _u_afterColor(0),
-        _progress(-1),
-        _mutex()
+            _mapRenderer(),
+            _elements(),
+            _tempElements(),
+            _drawDataBuffer(),
+            _lineDrawDataBuffer(),
+            _colorBuf(),
+            _coordBuf(),
+            _normalBuf(),
+            _texCoordBuf(),
+            _indexBuf(),
+            _textureCache(),
+            _progressBuf(),
+            _shader(),
+            _a_color(0),
+            _a_coord(0),
+            _a_normal(0),
+            _a_texCoord(0),
+            _a_progress(0),
+            _u_gamma(0),
+            _u_dpToPX(0),
+            _u_unitToDP(0),
+            _u_mvpMat(0),
+            _u_tex_before(0),
+            _u_tex_after(0),
+            _u_progress(0),
+            _u_gradientPercent(0),
+            _u_beforeColor(0),
+            _u_afterColor(0),
+            _progress(-1),
+            _mutex()
     {
     }
-    
+
     CustomLineRenderer::~CustomLineRenderer() {
     }
-    
+
+    void CustomLineRenderer::setComponents(const std::weak_ptr<Options>& options, const std::weak_ptr<MapRenderer>& mapRenderer) {
+        std::lock_guard<std::mutex> lock(_mutex);
+
+        _mapRenderer = mapRenderer;
+        _textureCache.reset();
+        _shader.reset();
+    }
+
     void CustomLineRenderer::offsetLayerHorizontally(double offset) {
         // Offset current draw data batch horizontally by the required amount
         std::lock_guard<std::mutex> lock(_mutex);
-    
+
         for (const std::shared_ptr<CustomLine>& element : _elements) {
             element->getDrawData()->offsetHorizontally(offset);
         }
     }
-    
-    void CustomLineRenderer::onSurfaceCreated(const std::shared_ptr<ShaderManager>& shaderManager, const std::shared_ptr<TextureManager>& textureManager) {
-        static ShaderSource shaderSource("line", &LINE_VERTEX_SHADER, &LINE_FRAGMENT_SHADER);
-        
-        _shader = shaderManager->createShader(shaderSource);
-    
-        // Get shader variables locations
-        glUseProgram(_shader->getProgId());
-        _a_color = _shader->getAttribLoc("a_color");
-        _a_coord = _shader->getAttribLoc("a_coord");
-        _a_normal = _shader->getAttribLoc("a_normal");
-        _a_texCoord = _shader->getAttribLoc("a_texCoord");
-        _a_progress = _shader->getAttribLoc("a_progress");
-        _u_gamma = _shader->getUniformLoc("u_gamma");
-        _u_dpToPX = _shader->getUniformLoc("u_dpToPX");
-        _u_unitToDP = _shader->getUniformLoc("u_unitToDP");
-        _u_mvpMat = _shader->getUniformLoc("u_mvpMat");
-        _u_tex_before = _shader->getUniformLoc("u_tex_before");
-        _u_tex_after = _shader->getUniformLoc("u_tex_after");
-        _u_progress = _shader->getUniformLoc("u_progress");
-        _u_gradientPercent = _shader->getUniformLoc("u_gradientPercent");
-        _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
-        _u_afterColor = _shader->getUniformLoc("u_afterColor");
 
-        Log::Errorf("Address %d, %d, %d, %d, %d \n", _a_color, _a_coord, _a_normal, _a_texCoord, _a_progress);
-
-        // Drop elements
-        std::vector<std::shared_ptr<CustomLine>> elements;
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            std::swap(elements, _elements);
-        }
-        for (const std::shared_ptr<CustomLine>& element : elements) {
-            element->setDrawData(std::shared_ptr<CustomLineDrawData>());
-        }
-    }
-    
-    void CustomLineRenderer::onDrawFrame(float deltaSeconds, StyleTextureCache& styleCache, const ViewState& viewState) {
+    void CustomLineRenderer::onDrawFrame(float deltaSeconds, const ViewState& viewState) {
         std::lock_guard<std::mutex> lock(_mutex);
-        
+
         if (_elements.empty()) {
             // Early return, to avoid calling glUseProgram etc.
             return;
         }
-        
+
+        if (!initializeRenderer()) {
+            return;
+        }
+
         glDisable(GL_CULL_FACE);
-        
+
         bind(viewState);
-    
+
         // Draw, batch by bitmap
         for (const std::shared_ptr<CustomLine>& element : _elements) {
-            addToBatch(element, styleCache, viewState);
-            drawBatch(styleCache, viewState);
+            addToBatch(element, viewState);
         }
-        
+        drawBatch(viewState);
+
         unbind();
 
         glEnable(GL_CULL_FACE);
-    
+
         GLContext::CheckGLError("CustomLineRenderer::onDrawFrame");
     }
-    
-    void CustomLineRenderer::onSurfaceDestroyed() {
-        _shader.reset();
-    }
-    
+
     void CustomLineRenderer::addElement(const std::shared_ptr<CustomLine>& element) {
         if (element->getDrawData()) {
             _tempElements.push_back(element);
         }
     }
-    
+
     void CustomLineRenderer::refreshElements() {
         std::lock_guard<std::mutex> lock(_mutex);
         _elements.clear();
         _elements.swap(_tempElements);
     }
-        
+
     void CustomLineRenderer::updateElement(const std::shared_ptr<CustomLine>& element) {
         std::lock_guard<std::mutex> lock(_mutex);
         if (std::find(_elements.begin(), _elements.end(), element) == _elements.end()) {
@@ -149,39 +122,38 @@ namespace carto {
             }
         }
     }
-        
+
     void CustomLineRenderer::removeElement(const std::shared_ptr<CustomLine>& element) {
         std::lock_guard<std::mutex> lock(_mutex);
         _elements.erase(std::remove(_elements.begin(), _elements.end(), element), _elements.end());
     }
-    
+
     void CustomLineRenderer::calculateRayIntersectedElements(const std::shared_ptr<VectorLayer>& layer, const cglib::ray3<double>& ray, const ViewState& viewState, std::vector<RayIntersectedElement>& results) const {
         std::lock_guard<std::mutex> lock(_mutex);
-    
+
         std::vector<MapPos> worldCoords;
         for (const std::shared_ptr<CustomLine>& element : _elements) {
             FindElementRayIntersection(element, element->getDrawData(), layer, ray, viewState, results);
         }
     }
-        
+
     void CustomLineRenderer::BuildAndDrawBuffers(GLuint a_color,
-                                           GLuint a_coord,
-                                           GLuint a_normal,
-                                           GLuint a_texCoord,
-                                           GLuint a_progress,
-                                           std::vector<unsigned char>& colorBuf,
-                                           std::vector<float>& coordBuf,
-                                           std::vector<float>& normalBuf,
-                                           std::vector<float>& texCoordBuf,
-                                           std::vector<unsigned short>& indexBuf,
-                                           std::vector<float>& progressBuf,
-                                           std::vector<const CustomLineDrawData*>& drawDataBuffer,
-                                           StyleTextureCache& styleCache,
-                                           const ViewState& viewState)
+                                                 GLuint a_coord,
+                                                 GLuint a_normal,
+                                                 GLuint a_texCoord,
+                                                 GLuint a_progress,
+                                                 std::vector<unsigned char>& colorBuf,
+                                                 std::vector<float>& coordBuf,
+                                                 std::vector<float>& normalBuf,
+                                                 std::vector<float>& texCoordBuf,
+                                                 std::vector<unsigned short>& indexBuf,
+                                                 std::vector<float>& progressBuf,
+                                                 std::vector<const CustomLineDrawData*>& drawDataBuffer,
+                                                 const ViewState& viewState)
     {
         // Get bitmap
         std::shared_ptr<Bitmap> bitmap = drawDataBuffer.front()->getBeforeBitmap();
-        
+
         // Calculate buffer size
         std::size_t totalCoordCount = 0;
         std::size_t totalIndexCount = 0;
@@ -189,12 +161,12 @@ namespace carto {
             for (std::size_t i = 0; i < drawData->getCoords().size(); i++) {
                 const std::vector<cglib::vec3<double>*>& coords = drawData->getCoords()[i];
                 const std::vector<unsigned int>& indices = drawData->getIndices()[i];
-                
+
                 totalCoordCount += coords.size();
                 totalIndexCount += indices.size();
             }
         }
-        
+
         // Resize the buffers, if necessary
         if (coordBuf.size() < totalCoordCount * 3) {
             colorBuf.resize(std::min(totalCoordCount * 4, GLContext::MAX_VERTEXBUFFER_SIZE * 4));
@@ -203,11 +175,11 @@ namespace carto {
             texCoordBuf.resize(std::min(totalCoordCount * 2, GLContext::MAX_VERTEXBUFFER_SIZE * 2));
             progressBuf.resize(std::min(totalCoordCount * 1, GLContext::MAX_VERTEXBUFFER_SIZE * 1));
         }
-        
+
         if (indexBuf.size() < totalIndexCount) {
             indexBuf.resize(std::min(totalIndexCount, GLContext::MAX_VERTEXBUFFER_SIZE));
         }
-        
+
         // Calculate and draw buffers
         cglib::vec3<double> cameraPos = viewState.getCameraPos();
         std::size_t colorIndex = 0;
@@ -220,7 +192,7 @@ namespace carto {
         for (const CustomLineDrawData* drawData : drawDataBuffer) {
             // Draw data vertex info may be split into multiple buffers, draw each one
             for (std::size_t i = 0; i < drawData->getCoords().size(); i++) {
-                
+
                 // Check for possible overflow in the buffer
                 const std::vector<unsigned int>& indices = drawData->getIndices()[i];
                 if (indexIndex + indices.size() > GLContext::MAX_VERTEXBUFFER_SIZE) {
@@ -239,7 +211,7 @@ namespace carto {
                     indexIndex = 0;
                     progressIndex = 0;
                 }
-                
+
                 // Indices
                 std::size_t indexOffset = coordIndex / 3;
                 std::vector<unsigned int>::const_iterator iit;
@@ -247,7 +219,7 @@ namespace carto {
                     indexBuf[indexIndex] = static_cast<unsigned short>(indexOffset + *iit);
                     indexIndex++;
                 }
-                
+
                 // Coords, tex coords and colors
                 Color color = drawData->getColor();
                 float normalScale = drawData->getNormalScale();
@@ -256,10 +228,10 @@ namespace carto {
                 if (normalScale < 0.5f) {
                     float c = normalScale / 0.5f;
                     color = Color(
-                        static_cast<unsigned char>(color.getR() * c),
-                        static_cast<unsigned char>(color.getG() * c),
-                        static_cast<unsigned char>(color.getB() * c),
-                        static_cast<unsigned char>(color.getA() * c)
+                            static_cast<unsigned char>(color.getR() * c),
+                            static_cast<unsigned char>(color.getG() * c),
+                            static_cast<unsigned char>(color.getB() * c),
+                            static_cast<unsigned char>(color.getA() * c)
                     );
                     normalScale = 0.5f;
                 }
@@ -293,7 +265,7 @@ namespace carto {
                     normalBuf[normalIndex + 2] = normal(2) * normalScale;
                     normalBuf[normalIndex + 3] = normal(3);
                     normalIndex += 4;
-                    
+
                     // Tex coords
                     const cglib::vec2<float>& texCoord = *tit;
                     texCoordBuf[texCoordIndex + 0] = texCoord(0);
@@ -306,7 +278,7 @@ namespace carto {
                 }
             }
         }
-        
+
         // Draw the final batch
         if (indexIndex > 0) {
             glVertexAttribPointer(a_color, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, colorBuf.data());
@@ -317,13 +289,13 @@ namespace carto {
             glDrawElements(GL_TRIANGLES, indexIndex, GL_UNSIGNED_SHORT, indexBuf.data());
         }
     }
-    
+
     bool CustomLineRenderer::FindElementRayIntersection(const std::shared_ptr<VectorElement>& element,
-                                                  const std::shared_ptr<CustomLineDrawData>& drawData,
-                                                  const std::shared_ptr<VectorLayer>& layer,
-                                                  const cglib::ray3<double>& ray,
-                                                  const ViewState& viewState,
-                                                  std::vector<RayIntersectedElement>& results)
+                                                        const std::shared_ptr<CustomLineDrawData>& drawData,
+                                                        const std::shared_ptr<VectorLayer>& layer,
+                                                        const cglib::ray3<double>& ray,
+                                                        const ViewState& viewState,
+                                                        std::vector<RayIntersectedElement>& results)
     {
         std::vector<cglib::vec3<double> > worldCoords;
 
@@ -332,7 +304,7 @@ namespace carto {
             const std::vector<cglib::vec3<double>*>& coords = drawData->getCoords()[i];
             worldCoords.clear();
             worldCoords.reserve(coords.size());
-            
+
             // Calculate world coordinates and bounding box
             cglib::bbox3<double> bounds = cglib::bbox3<double>::smallest();
             const std::vector<cglib::vec4<float> >& normals = drawData->getNormals()[i];
@@ -345,12 +317,12 @@ namespace carto {
                 bounds.add(worldCoord);
                 worldCoords.push_back(worldCoord);
             }
-            
+
             // Bounding box check
             if (!cglib::intersect_bbox(bounds, ray)) {
                 continue;
             }
-            
+
             // Click test
             const std::vector<unsigned int>& indices = drawData->getIndices()[i];
             const cglib::vec3<double>* prevPos = nullptr;
@@ -367,7 +339,7 @@ namespace carto {
                 if (!pos || !prevPos) {
                     continue;
                 }
-                
+
                 // Test a line triangle against the click position
                 double t = 0;
                 if (cglib::intersect_triangle(worldCoords[indices[i + 0]], worldCoords[indices[i + 1]], worldCoords[indices[i + 2]], ray, &t)) {
@@ -381,7 +353,38 @@ namespace carto {
         }
         return false;
     }
-    
+
+    bool CustomLineRenderer::initializeRenderer() {
+        if (_shader && _shader->isValid() && _textureCache && _textureCache->isValid()) {
+            return true;
+        }
+
+        if (auto mapRenderer = _mapRenderer.lock()) {
+            _textureCache = mapRenderer->getGLResourceManager()->create<BitmapTextureCache>(TEXTURE_CACHE_SIZE);
+
+            _shader = mapRenderer->getGLResourceManager()->create<Shader>("line", LINE_VERTEX_SHADER, LINE_FRAGMENT_SHADER);
+
+            // Get shader variables locations
+            _a_color = _shader->getAttribLoc("a_color");
+            _a_coord = _shader->getAttribLoc("a_coord");
+            _a_normal = _shader->getAttribLoc("a_normal");
+            _a_texCoord = _shader->getAttribLoc("a_texCoord");
+            _a_progress = _shader->getAttribLoc("a_progress");
+            _u_gamma = _shader->getUniformLoc("u_gamma");
+            _u_dpToPX = _shader->getUniformLoc("u_dpToPX");
+            _u_unitToDP = _shader->getUniformLoc("u_unitToDP");
+            _u_mvpMat = _shader->getUniformLoc("u_mvpMat");
+            _u_tex_before = _shader->getUniformLoc("u_tex_before");
+            _u_tex_after = _shader->getUniformLoc("u_tex_after");
+            _u_progress = _shader->getUniformLoc("u_progress");
+            _u_gradientPercent = _shader->getUniformLoc("u_gradientPercent");
+            _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
+            _u_afterColor = _shader->getUniformLoc("u_afterColor");
+        }
+
+        return _shader && _shader->isValid() && _textureCache && _textureCache->isValid();
+    }
+
     void CustomLineRenderer::bind(const ViewState& viewState) {
         // Prepare for drawing
         glUseProgram(_shader->getProgId());
@@ -404,7 +407,7 @@ namespace carto {
         glUniform1i(_u_tex_before, 0);
         glUniform1i(_u_tex_after, 1);
     }
-    
+
     void CustomLineRenderer::unbind() {
         // Disable bound arrays
         glDisableVertexAttribArray(_a_color);
@@ -413,12 +416,12 @@ namespace carto {
         glDisableVertexAttribArray(_a_texCoord);
         glDisableVertexAttribArray(_a_progress);
     }
-    
+
     bool CustomLineRenderer::isEmptyBatch() const {
         return _drawDataBuffer.empty();
     }
-    
-    void CustomLineRenderer::addToBatch(const std::shared_ptr<CustomLine>& customLine, StyleTextureCache& styleCache, const ViewState& viewState) {        
+
+    void CustomLineRenderer::addToBatch(const std::shared_ptr<CustomLine>& customLine, const ViewState& viewState) {
         _lineDrawDataBuffer.push_back(customLine->getDrawData().get());
         _drawDataBuffer.push_back(std::move(customLine->getDrawData()));
         _progress = customLine->getProgress();
@@ -428,8 +431,8 @@ namespace carto {
         glUniform4f(_u_afterColor, afterColor.getR() / 255.0f, afterColor.getG() / 255.0f, afterColor.getB() / 255.0f, afterColor.getA()/ 255.0f);
         glUniform1f(_u_gradientPercent, customLine->getDrawData()->getGradientPercent());
     }
-    
-    void CustomLineRenderer::drawBatch(StyleTextureCache& styleCache, const ViewState& viewState) {
+
+    void CustomLineRenderer::drawBatch(const ViewState& viewState) {
         if (_lineDrawDataBuffer.empty()) {
             return;
         }
@@ -438,18 +441,18 @@ namespace carto {
 
         // Bind texture
         const std::shared_ptr<Bitmap>& beforeBitmap = _lineDrawDataBuffer.front()->getBeforeBitmap();
-        std::shared_ptr<Texture> beforeTexture = styleCache.get(beforeBitmap);
+        std::shared_ptr<Texture> beforeTexture = _textureCache->get(beforeBitmap);
         if (!beforeTexture) {
-            beforeTexture = styleCache.create(beforeBitmap, true, true);
+            beforeTexture = _textureCache->create(beforeBitmap, true, true);
         }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, beforeTexture->getTexId());
 
         // Bind texture
         const std::shared_ptr<Bitmap>& afterBitmap = _lineDrawDataBuffer.front()->getAfterBitmap();
-        std::shared_ptr<Texture> afterTexture = styleCache.get(afterBitmap);
+        std::shared_ptr<Texture> afterTexture = _textureCache->get(afterBitmap);
         if (!afterTexture) {
-            afterTexture = styleCache.create(afterBitmap, true, true);
+            afterTexture = _textureCache->create(afterBitmap, true, true);
         }
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, afterTexture->getTexId());
@@ -457,13 +460,13 @@ namespace carto {
 
         glUniform1f(_u_progress, _progress);
 
-        BuildAndDrawBuffers(_a_color, _a_coord, _a_normal, _a_texCoord, _a_progress, _colorBuf, _coordBuf, _normalBuf,_texCoordBuf, _indexBuf, _progressBuf, _lineDrawDataBuffer, styleCache, viewState);
+        BuildAndDrawBuffers(_a_color, _a_coord, _a_normal, _a_texCoord, _a_progress, _colorBuf, _coordBuf, _normalBuf,_texCoordBuf, _indexBuf, _progressBuf, _lineDrawDataBuffer, viewState);
 
         _lineDrawDataBuffer.clear();
         _drawDataBuffer.clear();
         _progress = -1;
     }
-    
+
 
     const std::string CustomLineRenderer::LINE_VERTEX_SHADER = R"GLSL(
         #version 100
@@ -498,8 +501,8 @@ namespace carto {
     const std::string CustomLineRenderer::LINE_FRAGMENT_SHADER = R"GLSL(
         #version 100
         precision mediump float;
-        uniform float u_progress;
-        uniform float u_gradientPercent;
+        uniform highp float u_progress;
+        uniform highp float u_gradientPercent;
         uniform sampler2D u_tex_before;
         uniform sampler2D u_tex_after;
         uniform vec4 u_beforeColor;
@@ -518,16 +521,19 @@ namespace carto {
         #endif
         void main() {
             lowp float a = clamp(v_width - abs(v_dist), 0.0, 1.0);
-            if(v_progress <= u_progress - u_gradientPercent) {
-                gl_FragColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
-            } else if(v_progress <= u_progress + u_gradientPercent) {
-                float dist = v_progress - u_progress + u_gradientPercent;
-                float coef = dist / float(2.0 * u_gradientPercent);
-                gl_FragColor = (texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a * (1.0 - coef)) + (texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a * coef);
-            } else {
-                gl_FragColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
-            }
+
+            vec4 beforeColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
+            vec4 afterColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
+
+            float beforeCoef = (u_progress + u_gradientPercent - v_progress) /  (2.0 * u_gradientPercent);
+            float afterCoef = (u_gradientPercent - u_progress + v_progress) /  (2.0 * u_gradientPercent);
+
+            beforeCoef = clamp(beforeCoef, 0.0, 1.0);
+            afterCoef = clamp(afterCoef, 0.0, 1.0);
+
+            gl_FragColor = (beforeColor * beforeCoef) + (afterColor * afterCoef);
         }
     )GLSL";
 
+    const unsigned int CustomLineRenderer::TEXTURE_CACHE_SIZE = 4 * 1024 * 1024;
 }

@@ -104,6 +104,7 @@ namespace carto {
         _billboardRenderer->setComponents(std::static_pointer_cast<VectorLayer>(shared_from_this()), options, mapRenderer);
         _geometryCollectionRenderer->setComponents(options, mapRenderer);
         _lineRenderer->setComponents(options, mapRenderer);
+        _customLineRenderer->setComponents(options, mapRenderer);
         _pointRenderer->setComponents(options, mapRenderer);
         _polygonRenderer->setComponents(options, mapRenderer);
         _polygon3DRenderer->setComponents(options, mapRenderer);
@@ -298,8 +299,8 @@ namespace carto {
             }
             _lineRenderer->addElement(line);
         } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
-            if (!customLine->getDrawData() || customLine->getDrawData()->isOffset()) {
-                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), *projectionSurface));
+            if (!customLine->getDrawData() || customLine->getDrawData()->isOffset() || customLine->getDrawData()->getProjectionSurface() != projectionSurface) {
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
             }
             _customLineRenderer->addElement(customLine);
         } else if (const std::shared_ptr<Marker>& marker = std::dynamic_pointer_cast<Marker>(element)) {
@@ -387,7 +388,7 @@ namespace carto {
             }
         } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
             if (visible && !remove) {
-                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), *projectionSurface));
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
                 _customLineRenderer->updateElement(customLine);
             } else {
                 _customLineRenderer->removeElement(customLine);
