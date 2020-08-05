@@ -45,7 +45,7 @@ namespace carto {
             _u_tex_before(0),
             _u_tex_after(0),
             _u_progress(0),
-            _u_gradientPercent(0),
+            _u_gradientDistance(0),
             _u_beforeColor(0),
             _u_afterColor(0),
             _progress(-1),
@@ -377,7 +377,7 @@ namespace carto {
             _u_tex_before = _shader->getUniformLoc("u_tex_before");
             _u_tex_after = _shader->getUniformLoc("u_tex_after");
             _u_progress = _shader->getUniformLoc("u_progress");
-            _u_gradientPercent = _shader->getUniformLoc("u_gradientPercent");
+            _u_gradientDistance = _shader->getUniformLoc("u_gradientDistance");
             _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
             _u_afterColor = _shader->getUniformLoc("u_afterColor");
         }
@@ -399,7 +399,7 @@ namespace carto {
         glUniform1f(_u_dpToPX, viewState.getDPToPX());
         glUniform1f(_u_unitToDP, viewState.getUnitToDPCoef());
         glUniform1f(_u_progress, 0.0f);
-        glUniform1f(_u_gradientPercent, 0.0f);
+        glUniform1f(_u_gradientDistance, 0.0f);
         // Matrix
         const cglib::mat4x4<float>& mvpMat = viewState.getRTEModelviewProjectionMat();
         glUniformMatrix4fv(_u_mvpMat, 1, GL_FALSE, mvpMat.data());
@@ -429,7 +429,7 @@ namespace carto {
         glUniform4f(_u_beforeColor, beforeColor.getR() / 255.0f, beforeColor.getG() / 255.0f, beforeColor.getB() / 255.0f, beforeColor.getA()/ 255.0f);
         const Color& afterColor = customLine->getStyle()->getAfterColor();
         glUniform4f(_u_afterColor, afterColor.getR() / 255.0f, afterColor.getG() / 255.0f, afterColor.getB() / 255.0f, afterColor.getA()/ 255.0f);
-        glUniform1f(_u_gradientPercent, customLine->getDrawData()->getGradientPercent());
+        glUniform1f(_u_gradientDistance, customLine->getDrawData()->getGradientWidth());
     }
 
     void CustomLineRenderer::drawBatch(const ViewState& viewState) {
@@ -502,7 +502,7 @@ namespace carto {
         #version 100
         precision mediump float;
         uniform highp float u_progress;
-        uniform highp float u_gradientPercent;
+        uniform highp float u_gradientDistance;
         uniform sampler2D u_tex_before;
         uniform sampler2D u_tex_after;
         uniform vec4 u_beforeColor;
@@ -525,8 +525,8 @@ namespace carto {
             vec4 beforeColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
             vec4 afterColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
 
-            float beforeCoef = (u_progress + u_gradientPercent - v_progress) /  (2.0 * u_gradientPercent);
-            float afterCoef = (u_gradientPercent - u_progress + v_progress) /  (2.0 * u_gradientPercent);
+            float beforeCoef = (u_progress + u_gradientDistance - v_progress) /  (2.0 * u_gradientDistance);
+            float afterCoef = (u_gradientDistance - u_progress + v_progress) /  (2.0 * u_gradientDistance);
 
             beforeCoef = clamp(beforeCoef, 0.0, 1.0);
             afterCoef = clamp(afterCoef, 0.0, 1.0);

@@ -39,7 +39,7 @@ namespace carto {
 
         float getCurrentProgress() const;
 
-        float getGradientPercent() const;
+        float getGradientWidth() const;
     
         const std::vector<std::vector<cglib::vec3<double>*> >& getCoords() const;
     
@@ -76,7 +76,6 @@ namespace carto {
 
         float _clickScale;
 
-        float _gradientPercent;
         float _gradientWidth;
 
         // Actual line coordinates
