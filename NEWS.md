@@ -1,3 +1,60 @@
+CARTO Mobile SDK 4.3.3
+-------------------
+
+### Changes/fixes:
+
+* Fixed regression in label ray-hit detection routine when using globe mode
+
+
+CARTO Mobile SDK 4.3.3RC2
+-------------------
+
+### Changes/fixes:
+
+* Fixed critical content scaling issue on iPhone Plus devices
+* Started using API 30 as compilation target on Android
+
+
+CARTO Mobile SDK 4.3.3RC1
+-------------------
+
+### Changes/fixes:
+
+* Fixed PersistentCacheTileDataSource not working with large cache files
+* Faster initialization of PeristentCacheTileDataSource with large database files
+* Tweaks and fixes to vector tile feature click detection, marker images are now used to detect transparent pixels
+
+
+CARTO Mobile SDK 4.3.2
+-------------------
+
+### Changes/fixes:
+
+* Fixed PersistentCacheTileDataSource not working with large cache files
+* Changed PersistentCacheTileDataSource to be more conservative when estimating cache file size
+
+
+CARTO Mobile SDK 4.3.2RC2
+-------------------
+
+### Changes/fixes:
+
+* Fixed multiline RTL text formatting in VT renderer
+
+
+CARTO Mobile SDK 4.3.2RC1
+-------------------
+
+### Changes/fixes:
+
+* Added two new properties to HillshadeRasterTileLayer: shadow color and highlight color
+* Minor optimization: avoid tile reloading when listener is disconnected from the layer.
+* Slighlty higher background thread priority for tile/data loading tasks
+* Added dynamic thread creation to CancelableThreadPool when all workers are busy with lower priority tasks. 
+* Fixed transform/orientation being ignored when flipping vector tile labels
+* Enabled SIMD optimizations for WebP image library for slight performance boost
+
+
 CARTO Mobile SDK 4.3.1
 -------------------
 
