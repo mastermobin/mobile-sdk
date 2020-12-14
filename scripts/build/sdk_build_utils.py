@@ -46,6 +46,7 @@ def execute(cmd, dir, *cmdArgs):
   currentDir = os.getcwd()
   os.chdir(dir)
   cmdLine = [cmd] + list(cmdArgs)
+  print("Command: " + str(cmdLine))
   try:
     code = subprocess.call(cmdLine)
   except:

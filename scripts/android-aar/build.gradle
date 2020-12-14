@@ -5,10 +5,14 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.6.4'
+        classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:4.13.0'
     }
 }
 
 allprojects {
+    apply plugin: 'com.jfrog.artifactory'
+    apply plugin: 'maven-publish'
+
     repositories {
         google()
         jcenter()
@@ -16,6 +20,8 @@ allprojects {
 
     buildDir = '../../build/android-aar'
 }
+
+apply from: 'publish.gradle'
 
 apply plugin: 'com.android.library'
 
@@ -41,5 +47,9 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    lintOptions {
+        abortOnError false
     }
 }
