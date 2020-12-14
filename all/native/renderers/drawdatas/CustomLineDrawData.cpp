@@ -278,7 +278,7 @@ namespace carto {
             long double lineLength = calculateDistance(prevPos, pos, projection);
             addLineLength += lineLength;
 
-            Log::Infof("Prev: %f, Next: %f", prevAddLineLength, addLineLength);
+//            Log::Infof("Prev: %f, Next: %f", prevAddLineLength, addLineLength);
 
             // Trick to reuse already generated vertex data (only for mitered lines)
             if (!resetNormalVec && vertexIndex >= 2) {
