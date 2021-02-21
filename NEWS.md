@@ -1,3 +1,30 @@
+CARTO Mobile SDK 4.3.4
+-------------------
+
+### Changes/fixes:
+
+* Fixed out of range memory access issues when packing large VT geometries
+* Fixed an issue in VT line clipping implementation causing missing initial vertices in border cases
+* Optimizations when converting GeoJSON data to vector tile format (GeoJSONVectorTileDataSource)
+
+
+CARTO Mobile SDK 4.3.4RC1
+-------------------
+
+### Changes/fixes:
+
+* Added support for setting routing parameters to SGREOfflineRoutingService (setRoutingParameter, getRoutingParameter methods)
+* Added 'placement-priority' support for vector tile labels, allowing setting priorities for individual labels
+* Added onSurfaceChanged event to MapRendererListener. This method is called when map is resized.
+* Reduced rendering artifacts of wide dashed lines in vector tile renderer
+* Better precision when compressing vector tile coordinates, fixes rare visual artifacts
+* Fixed critical Xamarin iOS synchronization redrawing/disposing issues, causing exceptions
+* Fixed VectorTileLayer rendering issue related to opacity handling
+* Fixed watermark options being ignored after initial rendering
+* Fixed non-opaque highlight/shadow color handling in HillshadeRasterTileLayer
+* Additional safety checks in Android bitmap conversions
+
+
 CARTO Mobile SDK 4.3.3
 -------------------
 
