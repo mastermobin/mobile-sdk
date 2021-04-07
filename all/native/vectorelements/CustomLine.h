@@ -53,6 +53,17 @@ namespace carto {
          * @param poses The new vector of map positions that defines this line.
          */
         void setPoses(const std::vector<MapPos>& poses);
+
+        /**
+         * Returns the vertices that define this line.
+         * @return The vector of map positions that defines this line.
+         */
+        std::vector<int> getTraffics() const;
+        /**
+         * Sets the vertices that define this line.
+         * @param poses The new vector of map positions that defines this line.
+         */
+        void setTraffics(std::vector<int> traffics);
     
         /** 
          * Returns the style of this line.
@@ -75,10 +86,12 @@ namespace carto {
     protected:
         friend class CustomLineRenderer;
         friend class VectorLayer;
-    
+
     private:
         std::shared_ptr<CustomLineDrawData> _drawData;
-        
+
+        std::shared_ptr<std::vector<int> > _traffics;
+
         std::shared_ptr<CustomLineStyle> _style;
 
         float _progress;

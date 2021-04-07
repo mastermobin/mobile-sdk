@@ -162,8 +162,9 @@ def buildAndroidAAR(args):
     '-p', 'android-aar',
     '--project-cache-dir', buildDir,
     '--gradle-user-home', '%s/gradle' % buildDir,
-    'assembleRelease'
-  ):
+    'assembleRelease',
+    # 'artifactoryPublish'
+    ):
     return False
   aarFileName = '%s/outputs/aar/android-aar.aar' % buildDir
   if not os.path.exists(aarFileName):

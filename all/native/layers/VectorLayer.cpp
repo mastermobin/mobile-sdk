@@ -300,7 +300,7 @@ namespace carto {
             _lineRenderer->addElement(line);
         } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
             if (!customLine->getDrawData() || customLine->getDrawData()->isOffset() || customLine->getDrawData()->getProjectionSurface() != projectionSurface) {
-                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), customLine->getTraffics(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
             }
             _customLineRenderer->addElement(customLine);
         } else if (const std::shared_ptr<Marker>& marker = std::dynamic_pointer_cast<Marker>(element)) {
@@ -388,7 +388,7 @@ namespace carto {
             }
         } else if (const std::shared_ptr<CustomLine>& customLine = std::dynamic_pointer_cast<CustomLine>(element)) {
             if (visible && !remove) {
-                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
+                customLine->setDrawData(std::make_shared<CustomLineDrawData>(*customLine->getGeometry(), customLine->getTraffics(), *customLine->getStyle(), *_dataSource->getProjection(), projectionSurface));
                 _customLineRenderer->updateElement(customLine);
             } else {
                 _customLineRenderer->removeElement(customLine);
