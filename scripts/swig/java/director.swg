@@ -131,7 +131,7 @@ namespace Swig {
 #endif
         env_status_ = director_->swig_jvm_->GetEnv((void **)&jenv_, JNI_VERSION_1_2);
 #if defined(SWIG_JAVA_ATTACH_CURRENT_THREAD_AS_DAEMON)
-        // Attach a daemon thread to the JVM. Useful when the JVM should not wait for 
+        // Attach a daemon thread to the JVM. Useful when the JVM should not wait for
         // the thread to exit upon shutdown. Only for jdk-1.4 and later.
         if (env_status_ == JNI_EDETACHED)
           director_->swig_jvm_->AttachCurrentThreadAsDaemon(jenv, NULL);
@@ -152,6 +152,17 @@ namespace Swig {
         return jenv_;
       }
     };
+
+    /* Utility class for method wrapping */
+    struct SwigDirectorMethod {
+      const char *name;
+      const char *desc;
+      jmethodID methid;
+      SwigDirectorMethod(JNIEnv *jenv, jclass baseclass, const char *name, const char *desc) : name(name), desc(desc) {
+        methid = jenv->GetMethodID(baseclass, name, desc);
+      }
+    };
+
 
     /* Java object wrapper */
     JObjectWrapper swig_self_;
@@ -203,6 +214,11 @@ namespace Swig {
     void swig_java_change_ownership(JNIEnv *jenv, jobject jself, bool take_or_release) {
       std::lock_guard<std::recursive_mutex> lock(swig_director_mutex_);
       swig_self_.java_change_ownership(jenv, jself, take_or_release);
+    }
+
+    static jclass swig_new_global_ref(JNIEnv *jenv, const char *classname) {
+      jclass clz = jenv->FindClass(classname);
+      return clz ? (jclass)jenv->NewGlobalRef(clz) : 0;
     }
 
     // Carto-specific methods
