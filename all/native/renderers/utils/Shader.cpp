@@ -68,6 +68,7 @@ namespace carto {
                 GLenum type = 0;
                 glGetActiveUniform(_progId, tsj, VAR_NAME_BUF_SIZE, &actualLength, &size, &type, varNameBuf);
                 std::string varName(varNameBuf, actualLength);
+                Log::Errorf("Uniform: '%s'", varName.c_str());
                 GLuint loc = glGetUniformLocation(_progId, varName.c_str());
                 _uniformMap[varName] = loc;
             }
@@ -82,6 +83,7 @@ namespace carto {
                 GLenum type = 0;
                 glGetActiveAttrib(_progId, tsj, VAR_NAME_BUF_SIZE, &actualLength, &size, &type, varNameBuf);
                 std::string varName(varNameBuf, actualLength);
+                Log::Errorf("Attrib: '%s'", varName.c_str());
                 GLuint loc = glGetAttribLocation(_progId, varName.c_str());
                 _attribMap[varName] = loc;
             }

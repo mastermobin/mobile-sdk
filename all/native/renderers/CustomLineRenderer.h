@@ -57,12 +57,14 @@ namespace carto {
                                         GLuint a_normal,
                                         GLuint a_texCoord,
                                         GLuint a_progress,
+                                        GLuint a_traffic,
                                         std::vector<unsigned char>& colorBuf,
                                         std::vector<float>& coordBuf,
                                         std::vector<float>& normalBuf,
                                         std::vector<float>& texCoordBuf,
                                         std::vector<unsigned short>& indexBuf,
                                         std::vector<float>& progressBuf,
+                                        std::vector<float>& trafficBuf,
                                         std::vector<const CustomLineDrawData*>& drawDataBuffer,
                                         const ViewState& viewState);
 
@@ -101,6 +103,7 @@ namespace carto {
         std::vector<float> _texCoordBuf;
         std::vector<unsigned short> _indexBuf;
         std::vector<float> _progressBuf;
+        std::vector<float> _trafficBuf;
 
         std::shared_ptr<BitmapTextureCache> _textureCache;
         std::shared_ptr<Shader> _shader;
@@ -109,6 +112,7 @@ namespace carto {
         GLuint _a_normal;
         GLuint _a_texCoord;
         GLuint _a_progress;
+        GLuint _a_traffic;
         GLuint _u_gamma;
         GLuint _u_dpToPX;
         GLuint _u_unitToDP;
@@ -119,6 +123,7 @@ namespace carto {
         GLuint _u_gradientDistance;
         GLuint _u_beforeColor;
         GLuint _u_afterColor;
+        GLuint _u_traffic_color_0;
 
         mutable std::mutex _mutex;
     };

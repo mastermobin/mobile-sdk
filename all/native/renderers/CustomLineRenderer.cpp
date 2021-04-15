@@ -32,12 +32,14 @@ namespace carto {
             _indexBuf(),
             _textureCache(),
             _progressBuf(),
+            _trafficBuf(),
             _shader(),
             _a_color(0),
             _a_coord(0),
             _a_normal(0),
             _a_texCoord(0),
             _a_progress(0),
+            _a_traffic(0),
             _u_gamma(0),
             _u_dpToPX(0),
             _u_unitToDP(0),
@@ -48,6 +50,7 @@ namespace carto {
             _u_gradientDistance(0),
             _u_beforeColor(0),
             _u_afterColor(0),
+            _u_traffic_color_0(0),
             _progress(-1),
             _mutex()
     {
@@ -142,12 +145,14 @@ namespace carto {
                                                  GLuint a_normal,
                                                  GLuint a_texCoord,
                                                  GLuint a_progress,
+                                                 GLuint a_traffic,
                                                  std::vector<unsigned char>& colorBuf,
                                                  std::vector<float>& coordBuf,
                                                  std::vector<float>& normalBuf,
                                                  std::vector<float>& texCoordBuf,
                                                  std::vector<unsigned short>& indexBuf,
                                                  std::vector<float>& progressBuf,
+                                                 std::vector<float>& trafficBuf,
                                                  std::vector<const CustomLineDrawData*>& drawDataBuffer,
                                                  const ViewState& viewState)
     {
@@ -174,6 +179,7 @@ namespace carto {
             normalBuf.resize(std::min(totalCoordCount * 4, GLContext::MAX_VERTEXBUFFER_SIZE * 4));
             texCoordBuf.resize(std::min(totalCoordCount * 2, GLContext::MAX_VERTEXBUFFER_SIZE * 2));
             progressBuf.resize(std::min(totalCoordCount * 1, GLContext::MAX_VERTEXBUFFER_SIZE * 1));
+            trafficBuf.resize(std::min(totalCoordCount * 1, GLContext::MAX_VERTEXBUFFER_SIZE * 1));
         }
 
         if (indexBuf.size() < totalIndexCount) {
@@ -188,6 +194,7 @@ namespace carto {
         std::size_t texCoordIndex = 0;
         std::size_t indexIndex = 0;
         std::size_t progressIndex = 0;
+        std::size_t trafficIndex = 0;
         float texCoordYScale = (bitmap->getHeight() > 1 ? 1.0f / viewState.getUnitToDPCoef() : 1.0f);
         for (const CustomLineDrawData* drawData : drawDataBuffer) {
             // Draw data vertex info may be split into multiple buffers, draw each one
@@ -202,6 +209,7 @@ namespace carto {
                     glVertexAttribPointer(a_normal, 4, GL_FLOAT, GL_FALSE, 0, normalBuf.data());
                     glVertexAttribPointer(a_texCoord, 2, GL_FLOAT, GL_FALSE, 0, texCoordBuf.data());
                     glVertexAttribPointer(a_progress, 1, GL_FLOAT, GL_FALSE, 0, progressBuf.data());
+                    glVertexAttribPointer(a_traffic, 1, GL_FLOAT, GL_FALSE, 0, trafficBuf.data());
                     glDrawElements(GL_TRIANGLES, indexIndex, GL_UNSIGNED_SHORT, indexBuf.data());
                     // Start filling buffers from the beginning
                     colorIndex = 0;
@@ -210,6 +218,7 @@ namespace carto {
                     texCoordIndex = 0;
                     indexIndex = 0;
                     progressIndex = 0;
+                    trafficIndex = 0;
                 }
 
                 // Indices
@@ -239,11 +248,13 @@ namespace carto {
                 const std::vector<cglib::vec4<float> >& normals = drawData->getNormals()[i];
                 const std::vector<cglib::vec2<float> >& texCoords = drawData->getTexCoords()[i];
                 const std::vector<float>& progresses = drawData->getProgresses()[i];
+                const std::vector<int>& traffics = drawData->getTraffics()[i];
                 auto cit = coords.begin();
                 auto nit = normals.begin();
                 auto tit = texCoords.begin();
                 auto pit = progresses.begin();
-                for ( ; cit != coords.end(); ++cit, ++nit, ++tit, ++pit) {
+                auto trit = traffics.begin();
+                for ( ; cit != coords.end(); ++cit, ++nit, ++tit, ++pit, ++trit) {
                     // Colors
                     colorBuf[colorIndex + 0] = color.getR();
                     colorBuf[colorIndex + 1] = color.getG();
@@ -275,6 +286,11 @@ namespace carto {
                     // Progresses
                     progressBuf[progressIndex] = *pit;
                     progressIndex += 1;
+
+                    // Traffic
+                    trafficBuf[trafficIndex] = (float) *trit;
+//                    Log::Errorf("Traffic %d: %f", trafficIndex, trafficBuf[trafficIndex]);
+                    trafficIndex += 1;
                 }
             }
         }
@@ -286,6 +302,7 @@ namespace carto {
             glVertexAttribPointer(a_normal, 4, GL_FLOAT, GL_FALSE, 0, normalBuf.data());
             glVertexAttribPointer(a_texCoord, 2, GL_FLOAT, GL_FALSE, 0, texCoordBuf.data());
             glVertexAttribPointer(a_progress, 1, GL_FLOAT, GL_FALSE, 0, progressBuf.data());
+            glVertexAttribPointer(a_traffic, 1, GL_FLOAT, GL_FALSE, 0, trafficBuf.data());
             glDrawElements(GL_TRIANGLES, indexIndex, GL_UNSIGNED_SHORT, indexBuf.data());
         }
     }
@@ -370,6 +387,7 @@ namespace carto {
             _a_normal = _shader->getAttribLoc("a_normal");
             _a_texCoord = _shader->getAttribLoc("a_texCoord");
             _a_progress = _shader->getAttribLoc("a_progress");
+            _a_traffic = _shader->getAttribLoc("a_traffic");
             _u_gamma = _shader->getUniformLoc("u_gamma");
             _u_dpToPX = _shader->getUniformLoc("u_dpToPX");
             _u_unitToDP = _shader->getUniformLoc("u_unitToDP");
@@ -377,6 +395,7 @@ namespace carto {
             _u_tex_before = _shader->getUniformLoc("u_tex_before");
             _u_tex_after = _shader->getUniformLoc("u_tex_after");
             _u_progress = _shader->getUniformLoc("u_progress");
+            _u_traffic_color_0 = _shader->getUniformLoc("u_traffic_colors[0]");
             _u_gradientDistance = _shader->getUniformLoc("u_gradientDistance");
             _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
             _u_afterColor = _shader->getUniformLoc("u_afterColor");
@@ -394,12 +413,21 @@ namespace carto {
         glEnableVertexAttribArray(_a_normal);
         glEnableVertexAttribArray(_a_texCoord);
         glEnableVertexAttribArray(_a_progress);
+        glEnableVertexAttribArray(_a_traffic);
         // Scale, gamma
         glUniform1f(_u_gamma, 0.5f);
         glUniform1f(_u_dpToPX, viewState.getDPToPX());
         glUniform1f(_u_unitToDP, viewState.getUnitToDPCoef());
         glUniform1f(_u_progress, 0.0f);
         glUniform1f(_u_gradientDistance, 0.0f);
+
+        float color1[4] = {0.2, 0, 0, 1};
+        float color2[4] = {0.0, 0.7, 0, 1};
+        float color3[4] = {0.0, 0, 0.8, 1};
+
+        glUniform4fv(_u_traffic_color_0, 0, color1);
+        glUniform4fv(_u_traffic_color_0, 1, color2);
+        glUniform4fv(_u_traffic_color_0, 2, color3);
         // Matrix
         const cglib::mat4x4<float>& mvpMat = viewState.getRTEModelviewProjectionMat();
         glUniformMatrix4fv(_u_mvpMat, 1, GL_FALSE, mvpMat.data());
@@ -415,6 +443,7 @@ namespace carto {
         glDisableVertexAttribArray(_a_normal);
         glDisableVertexAttribArray(_a_texCoord);
         glDisableVertexAttribArray(_a_progress);
+        glDisableVertexAttribArray(_a_traffic);
     }
 
     bool CustomLineRenderer::isEmptyBatch() const {
@@ -460,7 +489,7 @@ namespace carto {
 
         glUniform1f(_u_progress, _progress);
 
-        BuildAndDrawBuffers(_a_color, _a_coord, _a_normal, _a_texCoord, _a_progress, _colorBuf, _coordBuf, _normalBuf,_texCoordBuf, _indexBuf, _progressBuf, _lineDrawDataBuffer, viewState);
+        BuildAndDrawBuffers(_a_color, _a_coord, _a_normal, _a_texCoord, _a_progress, _a_traffic, _colorBuf, _coordBuf, _normalBuf,_texCoordBuf, _indexBuf, _progressBuf, _trafficBuf, _lineDrawDataBuffer, viewState);
 
         _lineDrawDataBuffer.clear();
         _drawDataBuffer.clear();
@@ -474,16 +503,19 @@ namespace carto {
         attribute vec4 a_normal;
         attribute vec2 a_texCoord;
         attribute vec4 a_color;
+        attribute float a_traffic;
         attribute float a_progress;
         uniform float u_gamma;
         uniform float u_dpToPX;
         uniform float u_unitToDP;
+        uniform vec4 u_traffic_colors[3];
         uniform mat4 u_mvpMat;
         varying lowp vec4 v_color;
         varying vec2 v_texCoord;
         varying float v_dist;
         varying float v_width;
         varying float v_progress;
+        varying float v_traffic;
 
         void main() {
             float width = length(a_normal.xyz) * u_dpToPX;
@@ -492,6 +524,7 @@ namespace carto {
             v_color = a_color;
             v_texCoord = a_texCoord;
             v_progress = a_progress;
+            v_traffic = a_traffic;
             v_dist = a_normal.w * roundedWidth * u_gamma;
             v_width = 1.0 + (width - 1.0) * u_gamma;
             gl_Position = u_mvpMat * vec4(pos, 1.0);
@@ -507,7 +540,9 @@ namespace carto {
         uniform sampler2D u_tex_after;
         uniform vec4 u_beforeColor;
         uniform vec4 u_afterColor;
+        uniform vec4 u_traffic_colors[3];
         varying lowp vec4 v_color;
+        varying float v_traffic;
         #ifdef GL_FRAGMENT_PRECISION_HIGH
         varying highp vec2 v_texCoord;
         varying highp float v_dist;
@@ -524,6 +559,18 @@ namespace carto {
 
             vec4 beforeColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
             vec4 afterColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
+
+            if (v_traffic >= 0.0 && int(mod(v_traffic * 10000.0, 10000.0)) == 0) {
+                if (v_traffic < 1.0) {
+                    afterColor = vec4(1.0, 0.0, 0.0, 1.0);
+                } else if (v_traffic < 2.0) {
+                    afterColor = vec4(0.0, 1.0, 0.0, 1.0);
+                } else if (v_traffic < 3.0) {
+                    afterColor = vec4(0.0, 0.0, 1.0, 1.0);
+                } else {
+                    afterColor = u_traffic_colors[int(v_traffic)];
+                }
+            }
 
             float beforeCoef = (u_progress + u_gradientDistance - v_progress) /  (2.0 * u_gradientDistance);
             float afterCoef = (u_gradientDistance - u_progress + v_progress) /  (2.0 * u_gradientDistance);

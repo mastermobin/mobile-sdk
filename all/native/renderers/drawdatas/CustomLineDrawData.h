@@ -25,8 +25,8 @@ namespace carto {
     
     class CustomLineDrawData : public VectorElementDrawData {
     public:
-        CustomLineDrawData(const LineGeometry& geometry, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
-        CustomLineDrawData(const std::vector<MapPos>& poses, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
+        CustomLineDrawData(const LineGeometry& geometry, const std::vector<int>& trafficData, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
+        CustomLineDrawData(const std::vector<MapPos>& poses, const std::vector<int>& trafficData, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
         virtual ~CustomLineDrawData();
     
         const std::shared_ptr<Bitmap> getBeforeBitmap() const;
@@ -48,7 +48,9 @@ namespace carto {
         const std::vector<std::vector<cglib::vec2<float> > >& getTexCoords() const;
 
         const std::vector<std::vector<float> >& getProgresses() const;
-    
+
+        const std::vector<std::vector<int> >& getTraffics() const;
+
         const std::vector<std::vector<unsigned int> >& getIndices() const;
 
         double calculateDistance(cglib::vec3<double> a, cglib::vec3<double> b, const Projection& projection) const;
@@ -64,7 +66,7 @@ namespace carto {
     
         static const float CLICK_WIDTH_COEF;
         
-        void init(const std::vector<MapPos>& poses, const Projection& projection, const CustomLineStyle& style);
+        void init(const std::vector<MapPos>& poses, const std::vector<int>& trafficData, const Projection& projection, const CustomLineStyle& style);
     
         std::shared_ptr<Bitmap> _beforeBitmap;
 
@@ -80,13 +82,15 @@ namespace carto {
 
         // Actual line coordinates
         std::vector<cglib::vec3<double> > _poses;
-    
+        std::vector<int> _conj;
+
         // Origin point and normal for each vertex
         std::vector<std::vector<cglib::vec3<double>*> > _coords;
         std::vector<std::vector<cglib::vec4<float> > > _normals;
         std::vector<std::vector<cglib::vec2<float> > > _texCoords;
         std::vector<std::vector<float> > _progresses;
-    
+        std::vector<std::vector<int> > _traffics;
+
         std::vector<std::vector<unsigned int> > _indices;
     };
     

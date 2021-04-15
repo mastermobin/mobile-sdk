@@ -165,7 +165,7 @@ def buildAndroidAAR(args):
     'assembleRelease'
   ):
     return False
-  aarFileName = '%s/outputs/aar/android-aar.aar' % buildDir
+  aarFileName = '%s/outputs/aar/android-aar-release.aar' % buildDir
   if not os.path.exists(aarFileName):
     aarFileName = '%s/outputs/aar/android-aar-%s.aar' % (buildDir, args.configuration.lower())
   if makedirs(distDir) and \

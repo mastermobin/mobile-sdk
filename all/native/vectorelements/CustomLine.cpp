@@ -9,6 +9,7 @@ namespace carto {
 
     CustomLine::CustomLine(const std::shared_ptr<LineGeometry>& geometry, const std::shared_ptr<CustomLineStyle>& style) :
         VectorElement(geometry),
+        _traffics(std::make_shared<std::vector<int> >()),
         _style(style),
         _progress(0)
     {
@@ -18,16 +19,25 @@ namespace carto {
         if (!style) {
             throw NullArgumentException("Null style");
         }
+
+        _traffics->push_back(0);
+        _traffics->push_back(1);
+        _traffics->push_back(2);
     }
         
     CustomLine::CustomLine(std::vector<MapPos> poses, const std::shared_ptr<CustomLineStyle>& style) :
         VectorElement(std::make_shared<LineGeometry>(std::move(poses))),
+        _traffics(std::make_shared<std::vector<int> >()),
         _style(style),
         _progress(0)
     {
         if (!style) {
             throw NullArgumentException("Null style");
         }
+
+        _traffics->push_back(0);
+        _traffics->push_back(1);
+        _traffics->push_back(2);
     }
     
     CustomLine::~CustomLine() {
@@ -61,6 +71,19 @@ namespace carto {
         }
         notifyElementChanged();
     
+    }
+
+    std::vector<int> CustomLine::getTraffics() const {
+        return *_traffics;
+    }
+
+    void CustomLine::setTraffics(std::vector<int> traffics) {
+        {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            _traffics = std::make_shared<std::vector<int> >(std::move(traffics));
+        }
+        notifyElementChanged();
+
     }
     
     std::shared_ptr<CustomLineStyle> CustomLine::getStyle() const {
