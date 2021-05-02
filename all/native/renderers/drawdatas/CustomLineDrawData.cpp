@@ -196,7 +196,7 @@ namespace carto {
 
         // Detect if we must tesselate line joins
         bool tesselateLineJoin = (style.getLineJoinType() == CustomLineJoinType::LINE_JOIN_TYPE_BEVEL || style.getLineJoinType() == CustomLineJoinType::LINE_JOIN_TYPE_ROUND);
-    
+
         // Calculate angles between lines and buffers sizes
         std::size_t coordCount = (_poses.size() - 1) * 4;
         std::size_t indexCount = (_poses.size() - 1) * 6;
@@ -275,8 +275,8 @@ namespace carto {
 //        _gradientPercent = _gradientWidth;
         long double addLineLength = 0;
         long double prevAddLineLength = 0;
-        long int lineTraffic = 0;
-        long int prevLineTraffic = _conj[0];
+        long int lineTraffic = _conj[0];
+        long int prevLineTraffic = -1;
 
         // Calculate initial state for line string
         cglib::vec3<float> nextLine = cglib::vec3<float>::convert(_poses[1] - _poses[0]);
@@ -312,9 +312,6 @@ namespace carto {
             cglib::vec3<float> prevLine = cglib::vec3<float>::convert(pos - prevPos);
             cglib::vec3<float> prevPerpVec = cglib::unit(cglib::vector_product(posNormals[i], prevLine));
 
-            prevLineTraffic = lineTraffic;
-            lineTraffic = _conj[i];
-
             prevAddLineLength = addLineLength;
             long double lineLength = calculateDistance(prevPos, pos, projection);
             addLineLength += lineLength;
@@ -344,6 +341,28 @@ namespace carto {
             if (i == _poses.size() - 1) {
                 lastPerpVec = prevPerpVec;
             }
+
+            if(i != 1) {
+                coords.push_back(&prevPos);
+                coords.push_back(&prevPos);
+                progresses.push_back(prevAddLineLength);
+                progresses.push_back(prevAddLineLength);
+                traffics.push_back(prevLineTraffic);
+                traffics.push_back(prevLineTraffic);
+                if (useTexCoordY) {
+                    texCoords.push_back(cglib::vec2<float>(0, texCoordY));
+                    texCoords.push_back(cglib::vec2<float>(texCoordX, texCoordY));
+                } else {
+                    texCoords.push_back(cglib::vec2<float>(0, 0.5f));
+                    texCoords.push_back(cglib::vec2<float>(texCoordX, 0.5f));
+                }
+                normals.push_back(cglib::expand(prevNormalVec, 1.0f));
+                normals.push_back(cglib::expand(prevNormalVec, -1.0f));
+                vertexIndex += 2;
+            }
+
+            prevLineTraffic = lineTraffic;
+            lineTraffic = _conj[i];
 
             // Add line vertices, normals and indices
             coords.push_back(&prevPos);

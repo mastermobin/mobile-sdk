@@ -19,10 +19,6 @@ namespace carto {
         if (!style) {
             throw NullArgumentException("Null style");
         }
-
-        _traffics->push_back(0);
-        _traffics->push_back(1);
-        _traffics->push_back(2);
     }
         
     CustomLine::CustomLine(std::vector<MapPos> poses, const std::shared_ptr<CustomLineStyle>& style) :
@@ -34,10 +30,6 @@ namespace carto {
         if (!style) {
             throw NullArgumentException("Null style");
         }
-
-        _traffics->push_back(0);
-        _traffics->push_back(1);
-        _traffics->push_back(2);
     }
     
     CustomLine::~CustomLine() {
@@ -83,7 +75,6 @@ namespace carto {
             _traffics = std::make_shared<std::vector<int> >(std::move(traffics));
         }
         notifyElementChanged();
-
     }
     
     std::shared_ptr<CustomLineStyle> CustomLine::getStyle() const {

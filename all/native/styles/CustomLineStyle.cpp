@@ -2,8 +2,8 @@
 
 namespace carto {
 
-    CustomLineStyle::CustomLineStyle(const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
-            const Color& beforeColor, const Color& afterColor, float clickWidth,
+    CustomLineStyle::CustomLineStyle(const bool isNight, const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
+            const Color& beforeColor, const Color& afterColor, const Color& lightTrafficColor, const Color& casualTrafficColor, const Color& heavyTrafficColor, float clickWidth,
             CustomLineEndType::CustomLineEndType lineEndType, CustomLineJoinType::CustomLineJoinType lineJoinType,
             float stretchFactor, float width, float gradientWidth) :
         Style(color),
@@ -11,6 +11,10 @@ namespace carto {
         _afterBitmap(afterBitmap),
         _beforeColor(beforeColor),
         _afterColor(afterColor),
+        _lightTrafficColor(lightTrafficColor),
+        _casualTrafficColor(casualTrafficColor),
+        _heavyTrafficColor(heavyTrafficColor),
+        _isNight(isNight),
         _clickWidth(clickWidth),
         _lineEndType(lineEndType),
         _lineJoinType(lineJoinType),
@@ -38,7 +42,23 @@ namespace carto {
     const Color& CustomLineStyle::getAfterColor() const {
         return _afterColor;
     }
+
+    const Color& CustomLineStyle::getLightTrafficColor() const {
+        return _lightTrafficColor;
+    }
+
+    const Color& CustomLineStyle::getCasualTrafficColor() const {
+        return _casualTrafficColor;
+    }
+
+    const Color& CustomLineStyle::getHeavyTrafficColor() const {
+        return _heavyTrafficColor;
+    }
         
+    bool CustomLineStyle::isNight() const {
+        return _isNight;
+    }
+
     float CustomLineStyle::getClickWidth() const {
         return _clickWidth;
     }

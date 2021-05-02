@@ -79,7 +79,59 @@ namespace carto {
          * @param color The new color for the vector element in last section of line.
          */
         void setAfterColor(const Color& color);
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        Color getLightTrafficColor() const;
+        /**
+         * Sets the color for the vector element in last section of line. Coloring works by multiplying the bitmap
+         * of the vector element with the specified color. If the color is set to white, the resulting bitmap
+         * will look exactly like the original. The default is white.
+         * @param color The new color for the vector element in last section of line.
+         */
+        void setLightTrafficColor(const Color& color);
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        Color getCasualTrafficColor() const;
+        /**
+         * Sets the color for the vector element in last section of line. Coloring works by multiplying the bitmap
+         * of the vector element with the specified color. If the color is set to white, the resulting bitmap
+         * will look exactly like the original. The default is white.
+         * @param color The new color for the vector element in last section of line.
+         */
+        void setCasualTrafficColor(const Color& color);
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        Color getHeavyTrafficColor() const;
+        /**
+         * Sets the color for the vector element in last section of line. Coloring works by multiplying the bitmap
+         * of the vector element with the specified color. If the color is set to white, the resulting bitmap
+         * will look exactly like the original. The default is white.
+         * @param color The new color for the vector element in last section of line.
+         */
+        void setHeavyTrafficColor(const Color& color);
         
+        /**
+         * Returns the width of the line used for click detection.
+         * @return The width of the line used for click detection.
+         */
+        bool isNight() const;
+        /**
+         * Sets the width for the line that will be used for click detection.
+         * Units are screen density independent pixels (DP or DIP). If set to -1 the click width will be
+         * calculated automatically. The default is -1.
+         * @param clickWidth The new point size in dp.
+         */
+        void setNight(bool isNight);
+
         /**
          * Returns the width of the line used for click detection.
          * @return The width of the line used for click detection.
@@ -161,7 +213,12 @@ namespace carto {
 
         Color _beforeColor;
         Color _afterColor;
-        
+        Color _lightTrafficColor;
+        Color _casualTrafficColor;
+        Color _heavyTrafficColor;
+
+        bool _isNight;
+
         float _clickWidth;
     
         CustomLineEndType::CustomLineEndType _lineEndType;

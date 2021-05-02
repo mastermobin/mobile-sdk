@@ -11,6 +11,10 @@ namespace carto {
         _afterBitmap(GetDefaultBitmap()),
         _beforeColor(0xFFFFFFFF),
         _afterColor(0xFFFFFFFF),
+        _lightTrafficColor(0xFFFF992B),
+        _casualTrafficColor(0xFFFF001D),
+        _heavyTrafficColor(0xFFBF000D),
+        _isNight(false),
         _clickWidth(-1),
         _lineEndType(CustomLineEndType::LINE_END_TYPE_ROUND),
         _lineJoinType(CustomLineJoinType::LINE_JOIN_TYPE_MITER),
@@ -70,12 +74,52 @@ namespace carto {
         std::lock_guard<std::mutex> lock(_mutex);
         _afterColor = color;
     }
+
+    Color CustomLineStyleBuilder::getLightTrafficColor() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _lightTrafficColor;
+    }
+
+    void CustomLineStyleBuilder::setLightTrafficColor(const Color& color) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _lightTrafficColor = color;
+    }
+
+    Color CustomLineStyleBuilder::getCasualTrafficColor() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _casualTrafficColor;
+    }
+
+    void CustomLineStyleBuilder::setCasualTrafficColor(const Color& color) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _casualTrafficColor = color;
+    }
+
+    Color CustomLineStyleBuilder::getHeavyTrafficColor() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _heavyTrafficColor;
+    }
+
+    void CustomLineStyleBuilder::setHeavyTrafficColor(const Color& color) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _heavyTrafficColor = color;
+    }
         
+    bool CustomLineStyleBuilder::isNight() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _isNight;
+    }
+    
+    void CustomLineStyleBuilder::setNight(bool isNight) {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _isNight = isNight;
+    }
+
     float CustomLineStyleBuilder::getClickWidth() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _clickWidth;
     }
-    
+
     void CustomLineStyleBuilder::setClickWidth(float clickWidth) {
         std::lock_guard<std::mutex> lock(_mutex);
         _clickWidth = clickWidth;
@@ -133,7 +177,7 @@ namespace carto {
     
     std::shared_ptr<CustomLineStyle> CustomLineStyleBuilder::buildStyle() const {
         std::lock_guard<std::mutex> lock(_mutex);
-        return std::make_shared<CustomLineStyle>(_color, _beforeBitmap, _afterBitmap, _beforeColor, _afterColor, _clickWidth, _lineEndType, _lineJoinType,
+        return std::make_shared<CustomLineStyle>(_isNight, _color, _beforeBitmap, _afterBitmap, _beforeColor, _afterColor, _lightTrafficColor, _casualTrafficColor, _heavyTrafficColor, _clickWidth, _lineEndType, _lineJoinType,
                 _stretchFactor, _width, _gradientWidth);
     }
     

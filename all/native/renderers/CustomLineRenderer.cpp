@@ -45,12 +45,12 @@ namespace carto {
             _u_unitToDP(0),
             _u_mvpMat(0),
             _u_tex_before(0),
-            _u_tex_after(0),
             _u_progress(0),
             _u_gradientDistance(0),
             _u_beforeColor(0),
             _u_afterColor(0),
-            _u_traffic_color_0(0),
+            _u_traffic_color(0),
+            _u_night(0),
             _progress(-1),
             _mutex()
     {
@@ -156,6 +156,8 @@ namespace carto {
                                                  std::vector<const CustomLineDrawData*>& drawDataBuffer,
                                                  const ViewState& viewState)
     {
+        Log::Errorf("Test Call");
+
         // Get bitmap
         std::shared_ptr<Bitmap> bitmap = drawDataBuffer.front()->getBeforeBitmap();
 
@@ -289,7 +291,6 @@ namespace carto {
 
                     // Traffic
                     trafficBuf[trafficIndex] = (float) *trit;
-//                    Log::Errorf("Traffic %d: %f", trafficIndex, trafficBuf[trafficIndex]);
                     trafficIndex += 1;
                 }
             }
@@ -393,9 +394,9 @@ namespace carto {
             _u_unitToDP = _shader->getUniformLoc("u_unitToDP");
             _u_mvpMat = _shader->getUniformLoc("u_mvpMat");
             _u_tex_before = _shader->getUniformLoc("u_tex_before");
-            _u_tex_after = _shader->getUniformLoc("u_tex_after");
             _u_progress = _shader->getUniformLoc("u_progress");
-            _u_traffic_color_0 = _shader->getUniformLoc("u_traffic_colors[0]");
+            _u_night = _shader->getUniformLoc("u_night");
+            _u_traffic_color = _shader->getUniformLoc("u_traffic_colors[0]");
             _u_gradientDistance = _shader->getUniformLoc("u_gradientDistance");
             _u_beforeColor = _shader->getUniformLoc("u_beforeColor");
             _u_afterColor = _shader->getUniformLoc("u_afterColor");
@@ -421,19 +422,11 @@ namespace carto {
         glUniform1f(_u_progress, 0.0f);
         glUniform1f(_u_gradientDistance, 0.0f);
 
-        float color1[4] = {0.2, 0, 0, 1};
-        float color2[4] = {0.0, 0.7, 0, 1};
-        float color3[4] = {0.0, 0, 0.8, 1};
-
-        glUniform4fv(_u_traffic_color_0, 0, color1);
-        glUniform4fv(_u_traffic_color_0, 1, color2);
-        glUniform4fv(_u_traffic_color_0, 2, color3);
         // Matrix
         const cglib::mat4x4<float>& mvpMat = viewState.getRTEModelviewProjectionMat();
         glUniformMatrix4fv(_u_mvpMat, 1, GL_FALSE, mvpMat.data());
         // Texture
         glUniform1i(_u_tex_before, 0);
-        glUniform1i(_u_tex_after, 1);
     }
 
     void CustomLineRenderer::unbind() {
@@ -459,6 +452,17 @@ namespace carto {
         const Color& afterColor = customLine->getStyle()->getAfterColor();
         glUniform4f(_u_afterColor, afterColor.getR() / 255.0f, afterColor.getG() / 255.0f, afterColor.getB() / 255.0f, afterColor.getA()/ 255.0f);
         glUniform1f(_u_gradientDistance, customLine->getDrawData()->getGradientWidth());
+
+        const Color& lightTrafficColor = customLine->getStyle()->getLightTrafficColor();
+        const Color& casualTrafficColor = customLine->getStyle()->getCasualTrafficColor();
+        const Color& heavyTrafficColor = customLine->getStyle()->getHeavyTrafficColor();
+
+        float trafficColors[12] = {lightTrafficColor.getR() / 255.0f, lightTrafficColor.getG() / 255.0f, lightTrafficColor.getB() / 255.0f, lightTrafficColor.getA() / 255.0f,
+                                   casualTrafficColor.getR() / 255.0f, casualTrafficColor.getG() / 255.0f, casualTrafficColor.getB() / 255.0f, casualTrafficColor.getA() / 255.0f,
+                                   heavyTrafficColor.getR() / 255.0f, heavyTrafficColor.getG() / 255.0f, heavyTrafficColor.getB() / 255.0f, heavyTrafficColor.getA() / 255.0f};
+
+        glUniform4fv(_u_traffic_color, 12, trafficColors);
+        glUniform1i(_u_night, customLine->getStyle()->isNight() ? 1 : 0);
     }
 
     void CustomLineRenderer::drawBatch(const ViewState& viewState) {
@@ -476,16 +480,6 @@ namespace carto {
         }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, beforeTexture->getTexId());
-
-        // Bind texture
-        const std::shared_ptr<Bitmap>& afterBitmap = _lineDrawDataBuffer.front()->getAfterBitmap();
-        std::shared_ptr<Texture> afterTexture = _textureCache->get(afterBitmap);
-        if (!afterTexture) {
-            afterTexture = _textureCache->create(afterBitmap, true, true);
-        }
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, afterTexture->getTexId());
-        glActiveTexture(GL_TEXTURE0);
 
         glUniform1f(_u_progress, _progress);
 
@@ -505,6 +499,7 @@ namespace carto {
         attribute vec4 a_color;
         attribute float a_traffic;
         attribute float a_progress;
+        uniform int u_night;
         uniform float u_gamma;
         uniform float u_dpToPX;
         uniform float u_unitToDP;
@@ -534,15 +529,15 @@ namespace carto {
     const std::string CustomLineRenderer::LINE_FRAGMENT_SHADER = R"GLSL(
         #version 100
         precision mediump float;
+        uniform int u_night;
         uniform highp float u_progress;
         uniform highp float u_gradientDistance;
         uniform sampler2D u_tex_before;
-        uniform sampler2D u_tex_after;
         uniform vec4 u_beforeColor;
         uniform vec4 u_afterColor;
         uniform vec4 u_traffic_colors[3];
         varying lowp vec4 v_color;
-        varying float v_traffic;
+        varying lowp float v_traffic;
         #ifdef GL_FRAGMENT_PRECISION_HIGH
         varying highp vec2 v_texCoord;
         varying highp float v_dist;
@@ -557,18 +552,24 @@ namespace carto {
         void main() {
             lowp float a = clamp(v_width - abs(v_dist), 0.0, 1.0);
 
-            vec4 beforeColor = texture2D(u_tex_before, v_texCoord) * u_beforeColor * v_color * a;
-            vec4 afterColor = texture2D(u_tex_after, v_texCoord) * u_afterColor * v_color * a;
+            vec4 baseColor = texture2D(u_tex_before, v_texCoord) * v_color;
+            vec4 beforeColor = baseColor;
+            vec4 afterColor = baseColor;
+            if(u_night == 1){
+                beforeColor += u_beforeColor;
 
-            if (v_traffic >= 0.0 && int(mod(v_traffic * 10000.0, 10000.0)) == 0) {
-                if (v_traffic < 1.0) {
-                    afterColor = vec4(1.0, 0.0, 0.0, 1.0);
-                } else if (v_traffic < 2.0) {
-                    afterColor = vec4(0.0, 1.0, 0.0, 1.0);
-                } else if (v_traffic < 3.0) {
-                    afterColor = vec4(0.0, 0.0, 1.0, 1.0);
+                if (v_traffic >= 0.0) {
+                    afterColor += u_traffic_colors[int(v_traffic)];
                 } else {
-                    afterColor = u_traffic_colors[int(v_traffic)];
+                    afterColor += u_afterColor;
+                }
+            } else {
+                beforeColor *= u_beforeColor;
+
+                if (v_traffic >= 0.0) {
+                    afterColor *= u_traffic_colors[int(v_traffic)];
+                } else {
+                    afterColor *= u_afterColor;
                 }
             }
 
@@ -578,7 +579,7 @@ namespace carto {
             beforeCoef = clamp(beforeCoef, 0.0, 1.0);
             afterCoef = clamp(afterCoef, 0.0, 1.0);
 
-            gl_FragColor = (beforeColor * beforeCoef) + (afterColor * afterCoef);
+            gl_FragColor = ((beforeColor * beforeCoef) + (afterColor * afterCoef)) * a;
         }
     )GLSL";
 

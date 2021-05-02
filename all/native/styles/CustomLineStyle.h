@@ -77,8 +77,8 @@ namespace carto {
          * @param stretchFactor The color for the line.
          * @param width The width for the line.
          */
-        CustomLineStyle(const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
-                const Color& beforeColor, const Color& afterColor, float clickWidth,
+        CustomLineStyle(const bool isNight, const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
+                const Color& beforeColor, const Color& afterColor, const Color& lightTrafficColor, const Color& casualTrafficColor, const Color& heavyTrafficColor, float clickWidth,
                 CustomLineEndType::CustomLineEndType lineEndType, CustomLineJoinType::CustomLineJoinType lineJoinType,
                 float stretchFactor, float width, float gradientWidth);
         virtual ~CustomLineStyle();
@@ -106,13 +106,37 @@ namespace carto {
          * @return The color of the vector element in last section of line.
          */
         const Color& getAfterColor() const;
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        const Color& getLightTrafficColor() const;
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        const Color& getCasualTrafficColor() const;
+
+        /**
+         * Returns the color of the vector element in last section of line.
+         * @return The color of the vector element in last section of line.
+         */
+        const Color& getHeavyTrafficColor() const;
         
         /**
          * Returns the width of the line used for click detection.
          * @return The width of the line used for click detection.
          */
+        bool isNight() const;
+
+        /**
+         * Returns the width of the line used for click detection.
+         * @return The width of the line used for click detection.
+         */
         float getClickWidth() const;
-    
+
         /**
          * Returns the end point type of the line.
          * @return The end point type of the line.
@@ -145,7 +169,12 @@ namespace carto {
 
         Color _beforeColor;
         Color _afterColor;
-        
+        Color _lightTrafficColor;
+        Color _casualTrafficColor;
+        Color _heavyTrafficColor;
+
+        bool _isNight;
+
         float _clickWidth;
     
         CustomLineEndType::CustomLineEndType _lineEndType;
