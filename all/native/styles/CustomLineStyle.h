@@ -77,7 +77,7 @@ namespace carto {
          * @param stretchFactor The color for the line.
          * @param width The width for the line.
          */
-        CustomLineStyle(const bool isNight, const Color& color, const std::shared_ptr<Bitmap>& beforeBitmap, const std::shared_ptr<Bitmap>& afterBitmap,
+        CustomLineStyle(const bool isNight, const Color& color, const std::shared_ptr<Bitmap>& bitmap,
                 const Color& beforeColor, const Color& afterColor, const Color& lightTrafficColor, const Color& casualTrafficColor, const Color& heavyTrafficColor, float clickWidth,
                 CustomLineEndType::CustomLineEndType lineEndType, CustomLineJoinType::CustomLineJoinType lineJoinType,
                 float stretchFactor, float width, float gradientWidth);
@@ -87,13 +87,7 @@ namespace carto {
          * Returns the bitmap of the line in first section of line.
          * @return The bitmap of the line in first section of line.
          */
-        std::shared_ptr<Bitmap> getBeforeBitmap() const;
-
-        /**
-         * Returns the bitmap of the line in last section of line.
-         * @return The bitmap of the line in last section of line.
-         */
-        std::shared_ptr<Bitmap> getAfterBitmap() const;
+        std::shared_ptr<Bitmap> getBitmap() const;
 
         /**
          * Returns the color of the vector element in first section of line.
@@ -108,20 +102,20 @@ namespace carto {
         const Color& getAfterColor() const;
 
         /**
-         * Returns the color of the vector element in last section of line.
-         * @return The color of the vector element in last section of line.
+         * Returns the color of the line when the traffic is light(1).
+         * @return The color of the line when the traffic is light(1).
          */
         const Color& getLightTrafficColor() const;
 
         /**
-         * Returns the color of the vector element in last section of line.
-         * @return The color of the vector element in last section of line.
+         * Returns the color of the line when the traffic is casual(2).
+         * @return the color of the line when the traffic is casual(2).
          */
         const Color& getCasualTrafficColor() const;
 
         /**
-         * Returns the color of the vector element in last section of line.
-         * @return The color of the vector element in last section of line.
+         * Returns the color of the line when the traffic is heavy(3).
+         * @return the color of the line when the traffic is heavy(3).
          */
         const Color& getHeavyTrafficColor() const;
         
@@ -164,8 +158,7 @@ namespace carto {
         float getGradientWidth() const;
     
     protected:
-        std::shared_ptr<Bitmap> _beforeBitmap;
-        std::shared_ptr<Bitmap> _afterBitmap;
+        std::shared_ptr<Bitmap> _bitmap;
 
         Color _beforeColor;
         Color _afterColor;

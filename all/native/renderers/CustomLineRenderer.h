@@ -117,7 +117,7 @@ namespace carto {
         GLuint _u_dpToPX;
         GLuint _u_unitToDP;
         GLuint _u_mvpMat;
-        GLuint _u_tex_before;
+        GLuint _u_tex;
         GLuint _u_progress;
         GLuint _u_gradientDistance;
         GLuint _u_beforeColor;

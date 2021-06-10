@@ -32,28 +32,15 @@ namespace carto {
          * Returns the bitmap of the line in first section of line.
          * @return The bitmap of the line in first section of line.
          */
-        std::shared_ptr<Bitmap> getBeforeBitmap() const;
+        std::shared_ptr<Bitmap> getBitmap() const;
         /**
          * Sets the bitmap that will be used for drawing the line in first section of line. The bitmap will be stretched
          * horizontally to match the width of the line and repeated vertically along the lengtht of the line.
          * The default is "default_line.png".
          * @param bitmap The new bitmap for the line in first section of line.
          */
-        void setBeforeBitmap(const std::shared_ptr<Bitmap>& bitmap);
+        void setBitmap(const std::shared_ptr<Bitmap>& bitmap);
 
-        /**
-         * Returns the bitmap of the line in last section of line.
-         * @return The bitmap of the line in last section of line.
-         */
-        std::shared_ptr<Bitmap> getAfterBitmap() const;
-        /**
-         * Sets the bitmap that will be used for drawing the line in last section of line. The bitmap will be stretched
-         * horizontally to match the width of the line and repeated vertically along the lengtht of the line.
-         * The default is "default_line.png".
-         * @param bitmap The new bitmap for the line in last section of line.
-         */
-        void setAfterBitmap(const std::shared_ptr<Bitmap>& bitmap);
-        
         /**
          * Returns the color of the vector element in first section of line.
          * @return The color of the vector element in first section of line.
@@ -208,8 +195,7 @@ namespace carto {
         static std::shared_ptr<Bitmap> _DefaultBitmap;
         static std::mutex _DefaultBitmapMutex;
     
-        std::shared_ptr<Bitmap> _beforeBitmap;
-        std::shared_ptr<Bitmap> _afterBitmap;
+        std::shared_ptr<Bitmap> _bitmap;
 
         Color _beforeColor;
         Color _afterColor;

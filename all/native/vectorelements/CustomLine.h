@@ -55,13 +55,13 @@ namespace carto {
         void setPoses(const std::vector<MapPos>& poses);
 
         /**
-         * Returns the vertices that define this line.
-         * @return The vector of map positions that defines this line.
+         * Returns the traffic data of the line.
+         * @return The vector of int(traffic modes).
          */
         std::vector<int> getTraffics() const;
         /**
-         * Sets the vertices that define this line.
-         * @param poses The new vector of map positions that defines this line.
+         * Sets the traffic data of the line.
+         * @param traffics The new vector of int(traffic modes). 0 for no color, 1 for light, 2 for casual, 3 for heavy.
          */
         void setTraffics(std::vector<int> traffics);
     

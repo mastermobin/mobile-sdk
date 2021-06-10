@@ -44,7 +44,7 @@ namespace carto {
             _u_dpToPX(0),
             _u_unitToDP(0),
             _u_mvpMat(0),
-            _u_tex_before(0),
+            _u_tex(0),
             _u_progress(0),
             _u_gradientDistance(0),
             _u_beforeColor(0),
@@ -156,10 +156,8 @@ namespace carto {
                                                  std::vector<const CustomLineDrawData*>& drawDataBuffer,
                                                  const ViewState& viewState)
     {
-        Log::Errorf("Test Call");
-
         // Get bitmap
-        std::shared_ptr<Bitmap> bitmap = drawDataBuffer.front()->getBeforeBitmap();
+        std::shared_ptr<Bitmap> bitmap = drawDataBuffer.front()->getBitmap();
 
         // Calculate buffer size
         std::size_t totalCoordCount = 0;
@@ -393,7 +391,7 @@ namespace carto {
             _u_dpToPX = _shader->getUniformLoc("u_dpToPX");
             _u_unitToDP = _shader->getUniformLoc("u_unitToDP");
             _u_mvpMat = _shader->getUniformLoc("u_mvpMat");
-            _u_tex_before = _shader->getUniformLoc("u_tex_before");
+            _u_tex = _shader->getUniformLoc("u_tex");
             _u_progress = _shader->getUniformLoc("u_progress");
             _u_night = _shader->getUniformLoc("u_night");
             _u_traffic_color = _shader->getUniformLoc("u_traffic_colors[0]");
@@ -426,7 +424,7 @@ namespace carto {
         const cglib::mat4x4<float>& mvpMat = viewState.getRTEModelviewProjectionMat();
         glUniformMatrix4fv(_u_mvpMat, 1, GL_FALSE, mvpMat.data());
         // Texture
-        glUniform1i(_u_tex_before, 0);
+        glUniform1i(_u_tex, 0);
     }
 
     void CustomLineRenderer::unbind() {
@@ -473,13 +471,13 @@ namespace carto {
         const float progress = _lineDrawDataBuffer.front()->getCurrentProgress();
 
         // Bind texture
-        const std::shared_ptr<Bitmap>& beforeBitmap = _lineDrawDataBuffer.front()->getBeforeBitmap();
-        std::shared_ptr<Texture> beforeTexture = _textureCache->get(beforeBitmap);
-        if (!beforeTexture) {
-            beforeTexture = _textureCache->create(beforeBitmap, true, true);
+        const std::shared_ptr<Bitmap>& bitmap = _lineDrawDataBuffer.front()->getBitmap();
+        std::shared_ptr<Texture> texture = _textureCache->get(bitmap);
+        if (!texture) {
+            texture = _textureCache->create(bitmap, true, true);
         }
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, beforeTexture->getTexId());
+        glBindTexture(GL_TEXTURE_2D, texture->getTexId());
 
         glUniform1f(_u_progress, _progress);
 
@@ -532,7 +530,7 @@ namespace carto {
         uniform int u_night;
         uniform highp float u_progress;
         uniform highp float u_gradientDistance;
-        uniform sampler2D u_tex_before;
+        uniform sampler2D u_tex;
         uniform vec4 u_beforeColor;
         uniform vec4 u_afterColor;
         uniform vec4 u_traffic_colors[3];
@@ -552,7 +550,7 @@ namespace carto {
         void main() {
             lowp float a = clamp(v_width - abs(v_dist), 0.0, 1.0);
 
-            vec4 baseColor = texture2D(u_tex_before, v_texCoord) * v_color;
+            vec4 baseColor = texture2D(u_tex, v_texCoord) * v_color;
             vec4 beforeColor = baseColor;
             vec4 afterColor = baseColor;
             if(u_night == 1){

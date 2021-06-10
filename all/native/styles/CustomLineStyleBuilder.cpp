@@ -7,8 +7,7 @@ namespace carto {
 
     CustomLineStyleBuilder::CustomLineStyleBuilder() :
         StyleBuilder(),
-        _beforeBitmap(GetDefaultBitmap()),
-        _afterBitmap(GetDefaultBitmap()),
+        _bitmap(GetDefaultBitmap()),
         _beforeColor(0xFFFFFFFF),
         _afterColor(0xFFFFFFFF),
         _lightTrafficColor(0xFFFF992B),
@@ -27,34 +26,20 @@ namespace carto {
     CustomLineStyleBuilder::~CustomLineStyleBuilder() {
     }
         
-    std::shared_ptr<Bitmap> CustomLineStyleBuilder::getBeforeBitmap() const {
+    std::shared_ptr<Bitmap> CustomLineStyleBuilder::getBitmap() const {
         std::lock_guard<std::mutex> lock(_mutex);
-        return _beforeBitmap;
+        return _bitmap;
     }
     
-    void CustomLineStyleBuilder::setBeforeBitmap(const std::shared_ptr<Bitmap>& bitmap) {
+    void CustomLineStyleBuilder::setBitmap(const std::shared_ptr<Bitmap>& bitmap) {
         if (!bitmap) {
             throw NullArgumentException("Null bitmap");
         }
 
         std::lock_guard<std::mutex> lock(_mutex);
-        _beforeBitmap = bitmap;
+        _bitmap = bitmap;
     }
-        
-    std::shared_ptr<Bitmap> CustomLineStyleBuilder::getAfterBitmap() const {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _afterBitmap;
-    }
-    
-    void CustomLineStyleBuilder::setAfterBitmap(const std::shared_ptr<Bitmap>& bitmap) {
-        if (!bitmap) {
-            throw NullArgumentException("Null bitmap");
-        }
 
-        std::lock_guard<std::mutex> lock(_mutex);
-        _afterBitmap = bitmap;
-    }
-    
     Color CustomLineStyleBuilder::getBeforeColor() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _beforeColor;
@@ -177,7 +162,7 @@ namespace carto {
     
     std::shared_ptr<CustomLineStyle> CustomLineStyleBuilder::buildStyle() const {
         std::lock_guard<std::mutex> lock(_mutex);
-        return std::make_shared<CustomLineStyle>(_isNight, _color, _beforeBitmap, _afterBitmap, _beforeColor, _afterColor, _lightTrafficColor, _casualTrafficColor, _heavyTrafficColor, _clickWidth, _lineEndType, _lineJoinType,
+        return std::make_shared<CustomLineStyle>(_isNight, _color, _bitmap, _beforeColor, _afterColor, _lightTrafficColor, _casualTrafficColor, _heavyTrafficColor, _clickWidth, _lineEndType, _lineJoinType,
                 _stretchFactor, _width, _gradientWidth);
     }
     

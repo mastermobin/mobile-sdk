@@ -29,9 +29,7 @@ namespace carto {
         CustomLineDrawData(const std::vector<MapPos>& poses, const std::vector<int>& trafficData, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface);
         virtual ~CustomLineDrawData();
     
-        const std::shared_ptr<Bitmap> getBeforeBitmap() const;
-
-        const std::shared_ptr<Bitmap> getAfterBitmap() const;
+        const std::shared_ptr<Bitmap> getBitmap() const;
 
         float getNormalScale() const;
     
@@ -67,10 +65,8 @@ namespace carto {
         static const float CLICK_WIDTH_COEF;
         
         void init(const std::vector<MapPos>& poses, const std::vector<int>& trafficData, const Projection& projection, const CustomLineStyle& style);
-    
-        std::shared_ptr<Bitmap> _beforeBitmap;
 
-        std::shared_ptr<Bitmap> _afterBitmap;
+        std::shared_ptr<Bitmap> _bitmap;
 
         float _currentProgress;
     

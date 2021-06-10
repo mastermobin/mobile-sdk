@@ -19,8 +19,7 @@ namespace carto {
 
     CustomLineDrawData::CustomLineDrawData(const LineGeometry& geometry, const std::vector<int>& trafficData, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface) :
         VectorElementDrawData(style.getColor(), projectionSurface),
-        _beforeBitmap(style.getBeforeBitmap()),
-        _afterBitmap(style.getAfterBitmap()),
+        _bitmap(style.getBitmap()),
         _normalScale(style.getWidth() / 2),
         _clickScale(style.getClickWidth() == -1 ? std::max(1.0f, 1 + (IDEAL_CLICK_WIDTH - style.getWidth()) * CLICK_WIDTH_COEF / style.getWidth()) : style.getClickWidth()),
         _gradientWidth(style.getGradientWidth()),
@@ -37,8 +36,7 @@ namespace carto {
     
     CustomLineDrawData::CustomLineDrawData(const std::vector<MapPos>& poses, const std::vector<int>& trafficData, const CustomLineStyle& style, const Projection& projection, const std::shared_ptr<ProjectionSurface>& projectionSurface) :
         VectorElementDrawData(style.getColor(), projectionSurface),
-        _beforeBitmap(style.getBeforeBitmap()),
-        _afterBitmap(style.getAfterBitmap()),
+        _bitmap(style.getBitmap()),
         _normalScale(style.getWidth() / 2),
         _clickScale(std::max(1.0f, 1 + (IDEAL_CLICK_WIDTH - style.getWidth()) * CLICK_WIDTH_COEF / style.getWidth())),
         _gradientWidth(style.getGradientWidth()),
@@ -56,12 +54,8 @@ namespace carto {
     CustomLineDrawData::~CustomLineDrawData() {
     }
     
-    const std::shared_ptr<Bitmap> CustomLineDrawData::getBeforeBitmap() const {
-        return _beforeBitmap;
-    }
-    
-    const std::shared_ptr<Bitmap> CustomLineDrawData::getAfterBitmap() const {
-        return _afterBitmap;
+    const std::shared_ptr<Bitmap> CustomLineDrawData::getBitmap() const {
+        return _bitmap;
     }
 
     float CustomLineDrawData::getNormalScale() const {
@@ -248,8 +242,8 @@ namespace carto {
         // Texture bounds
         float texCoordX = 1.0f;
         float texCoordY = 0.0f;
-        float texCoordYScale = _beforeBitmap->getWidth() / (style.getStretchFactor() * _beforeBitmap->getHeight() * style.getWidth());
-        bool useTexCoordY = _beforeBitmap->getHeight() > 1;
+        float texCoordYScale = _bitmap->getWidth() / (style.getStretchFactor() * _bitmap->getHeight() * style.getWidth());
+        bool useTexCoordY = _bitmap->getHeight() > 1;
 
         // Instead of calculating actual vertex positions calculate vertex origins and normals
         // Actual vertex positions are view dependent and will be calculated in the renderer
