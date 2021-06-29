@@ -138,20 +138,19 @@ namespace carto {
         posNormals.reserve(poses.size());
         std::vector<MapPos> internalPoses;
 
-        for(int i = 0; i < trafficData.size(); i++){
-            Log::Errorf("Test Tr %d: %f", i, trafficData[i]);
-        }
+//        for(int i = 0; i < trafficData.size(); i++){
+//            Log::Errorf("Test Tr %d: %f", i, trafficData[i]);
+//        }
 
-        for(int i = 0; i < poses.size(); i++){
-            Log::Errorf("Test Pos %d: (%lf, %lf, %lf)", i, poses[i].getX(), poses[i].getY(), poses[i].getZ());
-        }
+//        for(int i = 0; i < poses.size(); i++){
+//            Log::Errorf("Test Pos %d: (%lf, %lf, %lf)", i, poses[i].getX(), poses[i].getY(), poses[i].getZ());
+//        }
 
         for (std::size_t i = 1; i < poses.size(); i++) {
             internalPoses.clear();
             _projectionSurface->tesselateSegment(projection.toInternal(poses[i - 1]), projection.toInternal(poses[i]), internalPoses);
             for (const MapPos& internalPos : internalPoses) {
                 cglib::vec3<double> pos = _projectionSurface->calculatePosition(internalPos);
-                Log::Errorf("Test IntPos %d: (%lf, %lf, %lf)", i, pos[0], pos[1], pos[2]);
                 if (_poses.empty() || pos != _poses.back()) {
                     _poses.push_back(pos);
                     posNormals.push_back(cglib::vec3<float>::convert(_projectionSurface->calculateNormal(internalPos)));
@@ -164,10 +163,8 @@ namespace carto {
                     }
 
                     if(index < trafficData.size()){
-                        Log::Errorf("Test In %d, %d: %f", i, index, trafficData[index]);
                         _conj.push_back(trafficData[index]);
                     } else {
-                        Log::Errorf("Test Out %d, %d: %f", i, index, trafficData[index]);
                         _conj.push_back(-1);
                     }
                 }
@@ -375,7 +372,6 @@ namespace carto {
             traffics.push_back(prevLineTraffic);
             traffics.push_back(prevLineTraffic);
             traffics.push_back(prevLineTraffic);
-            Log::Errorf("DrawData Tr %d: %f", i, prevLineTraffic);
 
             if (useTexCoordY) {
                 float texCoordYOffset = cglib::length(prevLine) * texCoordYScale;
@@ -608,6 +604,9 @@ namespace carto {
                     _texCoords.back().shrink_to_fit();
                     _texCoords.push_back(std::vector<cglib::vec2<float> >());
                     _texCoords.back().reserve(std::min(texCoords.size(), GLContext::MAX_VERTEXBUFFER_SIZE));
+                    _traffics.back().shrink_to_fit();
+                    _traffics.push_back(std::vector<int>());
+                    _traffics.back().reserve(std::min(traffics.size(), GLContext::MAX_VERTEXBUFFER_SIZE));
                     _progresses.back().shrink_to_fit();
                     _progresses.push_back(std::vector<float>());
                     _progresses.back().reserve(std::min(progresses.size(), GLContext::MAX_VERTEXBUFFER_SIZE));
@@ -625,6 +624,7 @@ namespace carto {
                         _coords.back().push_back(coords[index]);
                         _normals.back().push_back(normals[index]);
                         _texCoords.back().push_back(texCoords[index]);
+                        _traffics.back().push_back(traffics[index]);
                         _progresses.back().push_back(progresses[index]);
                         _indices.back().push_back(newIndex);
                         indexMap[index] = newIndex;
@@ -638,6 +638,7 @@ namespace carto {
         _coords.back().shrink_to_fit();
         _normals.back().shrink_to_fit();
         _texCoords.back().shrink_to_fit();
+        _traffics.back().shrink_to_fit();
         _progresses.back().shrink_to_fit();
         _indices.back().shrink_to_fit();
     }

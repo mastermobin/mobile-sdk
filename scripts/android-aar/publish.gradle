@@ -7,7 +7,7 @@ publishing {
         aar(MavenPublication) {
             groupId = 'org.neshan'
             artifactId = 'mapengine'
-            version = '4.3.4.7'
+            version = '4.3.4.11'
             // Tell maven to prepare the generated "*.aar" file for publishing
             artifact("$buildDir/outputs/aar/android-aar-release.aar")
 
